@@ -76,6 +76,7 @@ export function NFTMedia(props: NFTMediaProps) {
     client,
     tokenId,
     overrideMediaField,
+    style,
     ...rest
   } = props;
   const contract = getContract({
@@ -89,8 +90,16 @@ export function NFTMedia(props: NFTMediaProps) {
     client,
     overrideMediaField,
   });
-  const src = isLoading ? "show a loading animation here?" : data;
-  return <MediaRenderer client={client} src={src} {...rest} />;
+
+  // If media is loading, return a skeleton div with the same size 
+  // as the size that the MediaRenderer's supposed to be
+  if (isLoading) {
+    return (
+      // Maybe add some CSS here to make is looks like it's loading?
+      <div style={{ width: style?.width || "300px", height: style?.height }} />
+    );
+  }
+  return <MediaRenderer client={client} src={data} {...rest} />;
 }
 
 /**
