@@ -170,6 +170,10 @@ export {
   CreateDirectListingButton,
   type CreateDirectListingButtonProps,
 } from "../react/web/ui/prebuilt/thirdweb/CreateDirectListingButton/index.js";
+export {
+  NFTMedia,
+  type NFTMediaProps,
+} from "../react/web/ui/prebuilt/NFTMedia/index.js";
 
 export { useConnectionManager } from "../react/core/providers/connection-manager.js";
 
