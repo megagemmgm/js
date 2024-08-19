@@ -96,7 +96,12 @@ export function NFTMedia(props: NFTMediaProps) {
   if (isLoading) {
     return (
       // Maybe add some CSS here to make is looks like it's loading?
-      <div style={{ width: style?.width || "300px", height: style?.height }} />
+      <div
+        style={{
+          width: style?.width || "300px",
+          height: style?.height || "300px",
+        }}
+      />
     );
   }
   return <MediaRenderer client={client} src={data} {...rest} />;
