@@ -95,9 +95,10 @@ export function NFTMedia(props: NFTMediaProps) {
   // as the size that the MediaRenderer's supposed to be
   if (isLoading) {
     return (
-      // Maybe add some CSS here to make is looks like it's loading?
+      // TODO Maybe add some CSS here to make is looks like it's loading?
       <div
         style={{
+          // "300px" because that is the default size of MediaRenderer
           width: style?.width || "300px",
           height: style?.height || "300px",
         }}
