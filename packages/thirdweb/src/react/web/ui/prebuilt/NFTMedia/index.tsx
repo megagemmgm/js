@@ -68,6 +68,7 @@ export type NFTMediaProps = MediaRendererProps & {
  * />
  * ```
  *
+ * @component
  */
 export function NFTMedia(props: NFTMediaProps) {
   const {
