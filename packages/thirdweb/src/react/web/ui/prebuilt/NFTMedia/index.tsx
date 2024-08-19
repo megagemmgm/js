@@ -91,7 +91,7 @@ export function NFTMedia(props: NFTMediaProps) {
     overrideMediaField,
   });
 
-  // If media is loading, return a skeleton div with the same size 
+  // If media is loading, return a skeleton div with the same size
   // as the size that the MediaRenderer's supposed to be
   if (isLoading) {
     return (
