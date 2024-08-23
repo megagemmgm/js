@@ -114,6 +114,9 @@ export function NFTMedia(props: NFTMediaProps) {
     );
   }
 
+  /**
+   * If the props are passed into NFTMedia, we prioritize using it over the NFTProvider context
+   */
   const mediaSrc = nftMediaQuery.data || context?.media;
   return <MediaRenderer client={client} src={mediaSrc} {...rest} />;
 }
