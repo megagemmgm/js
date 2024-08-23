@@ -3,7 +3,7 @@ import type { ConnectLocale } from "./types.js";
 const connectLocaleEn: ConnectLocale = {
   id: "en_US",
   signIn: "Sign in",
-  defaultButtonTitle: "Connect Wallet",
+  defaultButtonTitle: "Connect",
   connecting: "Connecting",
   switchNetwork: "Switch Network",
   switchingNetwork: "Switching Network",
@@ -12,7 +12,7 @@ const connectLocaleEn: ConnectLocale = {
   installed: "Installed",
   buy: "Buy",
   continueAsGuest: "Continue as guest",
-  connectAWallet: "Connect a wallet",
+  connectAWallet: "Connect a Wallet",
   newToWallets: "New to wallets?",
   getStarted: "Get started",
   guest: "Guest",
@@ -37,6 +37,10 @@ const connectLocaleEn: ConnectLocale = {
   smartWallet: "Smart Wallet",
   or: "OR",
   goBackButton: "Back",
+  passkeys: {
+    title: "Passkeys",
+    linkPasskey: "Link a Passkey",
+  },
   welcomeScreen: {
     defaultTitle: "Your gateway to the decentralized world",
     defaultSubtitle: "Connect a wallet to get started",
@@ -91,7 +95,7 @@ const connectLocaleEn: ConnectLocale = {
     },
     signingScreen: {
       title: "Signing In",
-      prompt: "Sign the signature request in your wallet",
+      prompt: "Signing the signature request in your wallet",
       promptForSafe:
         "Sign signature request in your wallet & approve transaction in Safe",
       approveTransactionInSafe: "Approve transaction in Safe",
@@ -102,6 +106,8 @@ const connectLocaleEn: ConnectLocale = {
   },
   manageWallet: {
     title: "Manage Wallet",
+    linkedProfiles: "Linked Profiles",
+    linkProfile: "Link a Profile",
     connectAnApp: "Connect an App",
     exportPrivateKey: "Export Private Key",
   },

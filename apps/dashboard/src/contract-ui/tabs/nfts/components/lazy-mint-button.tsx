@@ -1,37 +1,23 @@
 import { MinterOnly } from "@3rdweb-sdk/react/components/roles/minter-only";
 import { Icon, useDisclosure } from "@chakra-ui/react";
-import { type useContract, useLazyMint } from "@thirdweb-dev/react";
-import { extensionDetectedState } from "components/buttons/ExtensionDetectButton";
 import { FiPlus } from "react-icons/fi";
+import type { ThirdwebContract } from "thirdweb";
 import { Button, Drawer } from "tw-components";
-import { NFTMintForm } from "./mint-form";
+import { LazyMintNftForm } from "./lazy-mint-form";
 
 interface NFTLazyMintButtonProps {
-  contractQuery: ReturnType<typeof useContract>;
+  contract: ThirdwebContract;
+  isErc721: boolean;
 }
 
 export const NFTLazyMintButton: React.FC<NFTLazyMintButtonProps> = ({
-  contractQuery,
+  contract,
+  isErc721,
   ...restButtonProps
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const mutation = useLazyMint(contractQuery.contract);
-
-  const detectedState = extensionDetectedState({
-    contractQuery,
-    feature: [
-      "ERC721LazyMintable",
-      "ERC1155LazyMintableV1",
-      "ERC1155LazyMintableV2",
-    ],
-  });
-
-  if (detectedState !== "enabled" || !contractQuery.contract) {
-    return null;
-  }
-
   return (
-    <MinterOnly contract={contractQuery.contract}>
+    <MinterOnly contract={contract}>
       <Drawer
         allowPinchZoom
         preserveScrollBarGap
@@ -39,10 +25,7 @@ export const NFTLazyMintButton: React.FC<NFTLazyMintButtonProps> = ({
         onClose={onClose}
         isOpen={isOpen}
       >
-        <NFTMintForm
-          contract={contractQuery.contract}
-          lazyMintMutation={mutation}
-        />
+        <LazyMintNftForm contract={contract} isErc721={isErc721} />
       </Drawer>
       <Button
         colorScheme="primary"

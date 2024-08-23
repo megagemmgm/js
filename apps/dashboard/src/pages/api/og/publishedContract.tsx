@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+import { isProd } from "@/constants/env";
 import { ImageResponse } from "@vercel/og";
 import type { NextRequest } from "next/server";
 import { PublishedContractOG } from "og-lib/url-utils";
-import { isProd } from "../../../constants/rpc";
 
 // Make sure the font exists in the specified path:
 export const config = {

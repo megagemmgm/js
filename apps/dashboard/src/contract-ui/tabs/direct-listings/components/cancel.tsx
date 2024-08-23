@@ -1,9 +1,8 @@
-import { useCancelDirectListing } from "@thirdweb-dev/react";
-import type { MarketplaceV3 } from "@thirdweb-dev/sdk";
 import { CancelTab } from "contract-ui/tabs/shared-components/cancel-tab";
+import type { ThirdwebContract } from "thirdweb";
 
 interface CancelDirectListingProps {
-  contract: MarketplaceV3;
+  contract: ThirdwebContract;
   listingId: string;
 }
 
@@ -11,7 +10,5 @@ export const CancelDirectListing: React.FC<CancelDirectListingProps> = ({
   contract,
   listingId,
 }) => {
-  const cancelDirectListing = useCancelDirectListing(contract);
-
-  return <CancelTab cancelQuery={cancelDirectListing} id={listingId} />;
+  return <CancelTab contract={contract} id={listingId} />;
 };

@@ -6,12 +6,11 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useDashboardRouter } from "@/lib/DashboardRouter";
+import { usePathname, useSearchParams } from "next/navigation";
 
-import React from "react";
-
-export function TablePagination(props: { isLandingPage?: boolean }) {
-  const router = useRouter();
+export function TablePagination() {
+  const router = useDashboardRouter();
   const path = usePathname();
   const searchParams = useSearchParams();
   const page = Number(searchParams?.get("page") || 1);
@@ -22,7 +21,6 @@ export function TablePagination(props: { isLandingPage?: boolean }) {
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
-            className={`${props.isLandingPage && "bg-black/50"}`}
             disabled={page <= 1}
             onClick={() => {
               if (page === 1) return;
@@ -35,10 +33,11 @@ export function TablePagination(props: { isLandingPage?: boolean }) {
             }}
           />
         </PaginationItem>
-        <PaginationItem className="px-4">{page}</PaginationItem>
+        <PaginationItem className="px-4 border rounded-lg h-full flex items-center bg-secondary">
+          {page}
+        </PaginationItem>
         <PaginationItem>
           <PaginationNext
-            className={`${props.isLandingPage && "bg-black/50"}`}
             onClick={() => {
               router.replace(
                 `${path}?page=${Number(page) + 1}${range?.length ? `&timeRange=${range}` : ""}${currentSort ? `&sortBy=${currentSort}` : ""}`,

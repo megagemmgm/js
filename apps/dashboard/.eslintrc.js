@@ -5,6 +5,7 @@ module.exports = {
     "plugin:import/typescript",
     "plugin:@next/next/recommended",
     "plugin:promise/recommended",
+    "plugin:storybook/recommended"
   ],
   rules: {
     "react-compiler/react-compiler": "error",
@@ -14,6 +15,21 @@ module.exports = {
         selector: "CallExpression[callee.name='useEffect']",
         message:
           'Are you *sure* you need to use "useEffect" here? If you loading any async function prefer using "useQuery".',
+      },
+      {
+        selector: "CallExpression[callee.name='defineChain']",
+        message:
+          "Use useV5DashboardChain instead if you are using it inside a component",
+      },
+      {
+        selector: "CallExpression[callee.name='defineDashboardChain']",
+        message:
+          "Use useV5DashboardChain instead if you are using it inside a component",
+      },
+      {
+        selector: "CallExpression[callee.name='mapV4ChainToV5Chain']",
+        message:
+          "Use useV5DashboardChain instead if you are using it inside a component",
       },
     ],
     "no-restricted-imports": [
@@ -64,6 +80,12 @@ module.exports = {
             name: "@chakra-ui/menu",
             message:
               "Import from `@chakra-ui/react` instead of `@chakra-ui/menu`.",
+          },
+          {
+            name: "next/navigation",
+            importNames: ["useRouter"],
+            message:
+              'Use `import { useDashboardRouter } from "@/lib/DashboardRouter";` instead',
           },
         ],
       },

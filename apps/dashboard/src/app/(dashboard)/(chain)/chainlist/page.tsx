@@ -92,11 +92,12 @@ async function getChainsToRender(params: SearchParams) {
       const urlServiceArray = Array.isArray(params.service)
         ? params.service
         : [params.service];
+
       // if the chain does not have all of the services in the filter, return false to filter it out
       if (
-        !urlServiceArray.every((service) =>
-          chain.services.find((s) => s.enabled && s.service === service),
-        )
+        !urlServiceArray.every((service) => {
+          return chain.services.find((s) => s.enabled && s.service === service);
+        })
       ) {
         // skip to the next chain
         continue;
@@ -146,6 +147,10 @@ export const metadata: Metadata = {
   description:
     "A list of EVM networks with RPCs, smart contracts, block explorers & faucets. Deploy smart contracts to all EVM chains with thirdweb.",
 };
+
+// we use headers() to determine if we should default to table or grid view by checking viewport
+// so this page needs to be forced as dynamic
+export const dynamic = "force-dynamic";
 
 export default function ChainListPage(props: { searchParams: SearchParams }) {
   const headersList = headers();

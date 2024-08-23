@@ -1,27 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
 import type { AsyncStorage } from "../../../../utils/storage/AsyncStorage.js";
+import { createWallet } from "../../../../wallets/create-wallet.js";
 import { getUrlToken } from "../../../../wallets/in-app/web/lib/get-url-token.js";
 import type { Wallet } from "../../../../wallets/interfaces/wallet.js";
 import {
-  type ConnectionManager,
   getLastConnectedChain,
   getStoredActiveWalletId,
   getStoredConnectedWalletIds,
 } from "../../../../wallets/manager/index.js";
+import { useConnectionManagerCtx } from "../../providers/connection-manager.js";
 import { setLastAuthProvider } from "../../utils/storage.js";
 import { timeoutPromise } from "../../utils/timeoutPromise.js";
 import type { AutoConnectProps } from "../connection/types.js";
-import { useConnectCore } from "./useConnect.js";
-import { useSetActiveWalletConnectionStatusCore } from "./useSetActiveWalletConnectionStatus.js";
+import { useConnect } from "./useConnect.js";
+import { useSetActiveWalletConnectionStatus } from "./useSetActiveWalletConnectionStatus.js";
 
 export function useAutoConnectCore(
-  manager: ConnectionManager,
   storage: AsyncStorage,
   props: AutoConnectProps & { wallets: Wallet[] },
   getInstalledWallets?: () => Wallet[],
 ) {
-  const setConnectionStatus = useSetActiveWalletConnectionStatusCore(manager);
-  const { connect } = useConnectCore(manager, {
+  const manager = useConnectionManagerCtx("useAutoConnect");
+  const setConnectionStatus = useSetActiveWalletConnectionStatus();
+  const { connect } = useConnect({
     client: props.client,
     accountAbstraction: props.accountAbstraction,
   });
@@ -68,7 +69,8 @@ export function useAutoConnectCore(
     const availableWallets = [...wallets, ...(getInstalledWallets?.() ?? [])];
     const activeWallet =
       lastActiveWalletId &&
-      availableWallets.find((w) => w.id === lastActiveWalletId);
+      (availableWallets.find((w) => w.id === lastActiveWalletId) ||
+        createWallet(lastActiveWalletId));
 
     if (activeWallet) {
       try {
@@ -94,6 +96,9 @@ export function useAutoConnectCore(
           setConnectionStatus("disconnected");
         }
       } catch (e) {
+        if (e instanceof Error) {
+          console.warn("Error auto connecting wallet:", e.message);
+        }
         setConnectionStatus("disconnected");
       }
     } else {
@@ -110,7 +115,7 @@ export function useAutoConnectCore(
       try {
         await handleWalletConnection(wallet);
         manager.addConnectedWallet(wallet);
-      } catch (e) {
+      } catch {
         // no-op
       }
     }

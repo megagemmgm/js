@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { ThirdwebClient } from "../../../../../../../client/client.js";
 import type { BuyWithCryptoQuote } from "../../../../../../../pay/buyWithCrypto/getQuote.js";
+import type { BuyWithCryptoStatus } from "../../../../../../../pay/buyWithCrypto/getStatus.js";
 import { iconSize } from "../../../../../../core/design-system/index.js";
 import { useBuyWithCryptoStatus } from "../../../../../../core/hooks/pay/useBuyWithCryptoStatus.js";
 import { invalidateWalletBalance } from "../../../../../../core/providers/invalidateWalletBalance.js";
@@ -19,15 +20,17 @@ type UIStatus = "pending" | "success" | "failed" | "partialSuccess";
 export function SwapStatusScreen(props: {
   title: string;
   onBack?: () => void;
-  onViewPendingTx: () => void;
   swapTxHash: string;
   client: ThirdwebClient;
   onTryAgain: () => void;
   onDone: () => void;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
   quote: BuyWithCryptoQuote;
+  onSuccess: ((status: BuyWithCryptoStatus) => void) | undefined;
 }) {
+  const { onSuccess } = props;
+
   const swapStatus = useBuyWithCryptoStatus({
     client: props.client,
     transactionHash: props.swapTxHash,
@@ -46,6 +49,18 @@ export function SwapStatusScreen(props: {
   ) {
     uiStatus = "partialSuccess";
   }
+
+  const purchaseCbCalled = useRef(false);
+  useEffect(() => {
+    if (purchaseCbCalled.current || !onSuccess) {
+      return;
+    }
+
+    if (swapStatus.data?.status === "COMPLETED") {
+      purchaseCbCalled.current = true;
+      onSuccess(swapStatus.data);
+    }
+  }, [onSuccess, swapStatus]);
 
   const queryClient = useQueryClient();
   const balanceInvalidated = useRef(false);
@@ -91,7 +106,7 @@ export function SwapStatusScreen(props: {
               />
               <Spacer y="sm" />
               <Text color={"primaryText"} size="lg">
-                Buy Success
+                Buy Complete
               </Text>
             </Container>
 
@@ -100,7 +115,7 @@ export function SwapStatusScreen(props: {
             <Spacer y="sm" />
             {!props.isEmbed && (
               <Button variant="accent" fullWidth onClick={props.onDone}>
-                {props.isBuyForTx ? "Continue Transaction" : "Done"}
+                {props.transactionMode ? "Continue Transaction" : "Done"}
               </Button>
             )}
           </>

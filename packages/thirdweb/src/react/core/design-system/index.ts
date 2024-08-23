@@ -35,7 +35,7 @@ const lightColors = {
   base4: "#dbd8e0",
   primaryText: "#211f26",
   secondaryText: "#6f6d78",
-  accentText: "hsl(216 100% 45%)",
+  accentText: "#3385FF",
   success: "#30A46C",
   danger: "#e5484D",
   overlay: "rgba(0, 0, 0, 0.7)",
@@ -98,9 +98,9 @@ export type Theme = {
 /**
  * @internal
  */
-function createThemeObj(colors: ThemeColors): Theme {
+function createThemeObj(type: "dark" | "light", colors: ThemeColors): Theme {
   return {
-    type: "dark" as "light" | "dark",
+    type,
     colors: {
       primaryText: colors.primaryText,
       secondaryText: colors.secondaryText,
@@ -149,8 +149,11 @@ function createThemeObj(colors: ThemeColors): Theme {
   };
 }
 
-export const darkThemeObj = /* @__PURE__ */ createThemeObj(darkColors);
-export const lightThemeObj = /* @__PURE__ */ createThemeObj(lightColors);
+export const darkThemeObj = /* @__PURE__ */ createThemeObj("dark", darkColors);
+export const lightThemeObj = /* @__PURE__ */ createThemeObj(
+  "light",
+  lightColors,
+);
 
 /**
  * @theme
@@ -170,6 +173,8 @@ export const fontSize = {
 };
 
 export const spacing = {
+  "4xs": "2px",
+  "3xs": "4px",
   xxs: "6px",
   xs: "8px",
   sm: "12px",
@@ -181,6 +186,7 @@ export const spacing = {
 };
 
 export const radius = {
+  xs: "4px",
   sm: "6px",
   md: "8px",
   lg: "12px",

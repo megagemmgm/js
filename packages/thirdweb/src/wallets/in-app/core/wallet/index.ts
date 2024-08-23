@@ -12,7 +12,7 @@ import type {
   WalletAutoConnectionOption,
   WalletConnectionOption,
 } from "../../../wallet-types.js";
-import { UserWalletStatus } from "../authentication/type.js";
+import { UserWalletStatus } from "../authentication/types.js";
 import type { InAppConnector } from "../interfaces/connector.js";
 
 /**
@@ -40,20 +40,23 @@ export async function connectInAppWallet(
   connector: InAppConnector,
 ): Promise<[Account, Chain]> {
   if (
-    createOptions?.auth?.mode === "redirect" &&
+    createOptions?.auth?.mode !== "popup" &&
     connector.authenticateWithRedirect
   ) {
     const strategy = options.strategy;
-    if (!socialAuthOptions.includes(strategy as SocialAuthOption)) {
-      throw new Error("This authentication method does not support redirects");
+    if (socialAuthOptions.includes(strategy as SocialAuthOption)) {
+      connector.authenticateWithRedirect(
+        strategy as SocialAuthOption,
+        createOptions?.auth?.mode,
+        createOptions?.auth?.redirectUrl,
+      );
     }
-    connector.authenticateWithRedirect(strategy as SocialAuthOption);
   }
   // If we don't have authenticateWithRedirect then it's likely react native, so the default is to redirect and we can carry on
   // IF WE EVER ADD MORE CONNECTOR TYPES, this could cause redirect to be ignored despite being specified
   // TODO: In V6, make everything redirect auth
 
-  const authResult = await connector.authenticate(options);
+  const authResult = await connector.connect(options);
   const authAccount = authResult.user.account;
 
   if (

@@ -1,9 +1,9 @@
 import { Divider, Flex, GridItem, SimpleGrid } from "@chakra-ui/react";
-import { contractType, useContract } from "@thirdweb-dev/react";
-import { type Abi, getAllDetectedFeatureNames } from "@thirdweb-dev/sdk";
 import { PublishedBy } from "components/contract-components/shared/published-by";
 import { RelevantDataSection } from "components/dashboard/RelevantDataSection";
+import type { ContractType } from "constants/contracts";
 import { useMemo } from "react";
+import type { ThirdwebContract } from "thirdweb";
 import { AnalyticsOverview } from "./components/Analytics";
 import { BuildYourApp } from "./components/BuildYourApp";
 import { ContractChecklist } from "./components/ContractChecklist";
@@ -16,32 +16,22 @@ import { TokenDetails } from "./components/TokenDetails";
 import { getGuidesAndTemplates } from "./helpers/getGuidesAndTemplates";
 
 interface ContractOverviewPageProps {
-  contractAddress?: string;
+  contract: ThirdwebContract;
+  contractType: ContractType;
+  detectedFeatureNames: string[];
 }
 
 const TRACKING_CATEGORY = "contract_overview";
 
 export const ContractOverviewPage: React.FC<ContractOverviewPageProps> = ({
-  contractAddress,
+  contract,
+  contractType,
+  detectedFeatureNames,
 }) => {
-  const { contract } = useContract(contractAddress);
-  const contractTypeQuery = contractType.useQuery(contractAddress);
-  const contractTypeData = contractTypeQuery?.data || "custom";
-
-  const detectedFeatureNames = useMemo(
-    () =>
-      contract?.abi ? getAllDetectedFeatureNames(contract.abi as Abi) : [],
-    [contract?.abi],
-  );
-
   const { guides, templates } = useMemo(
-    () => getGuidesAndTemplates(detectedFeatureNames, contractTypeData),
-    [detectedFeatureNames, contractTypeData],
+    () => getGuidesAndTemplates(detectedFeatureNames, contractType),
+    [detectedFeatureNames, contractType],
   );
-
-  if (!contractAddress) {
-    return <div>No contract address provided</div>;
-  }
 
   return (
     <SimpleGrid columns={{ base: 1, xl: 10 }} gap={20}>
@@ -49,20 +39,19 @@ export const ContractOverviewPage: React.FC<ContractOverviewPageProps> = ({
         {contract && <ContractChecklist contract={contract} />}
         {contract && (
           <AnalyticsOverview
-            contractAddress={contractAddress}
-            chainId={contract.chainId}
+            contractAddress={contract.address}
+            chainId={contract.chain.id}
             trackingCategory={TRACKING_CATEGORY}
           />
         )}
         {contract &&
-          (contractTypeData === "marketplace" ||
+          (contractType === "marketplace" ||
             ["DirectListings", "EnglishAuctions"].some((type) =>
               detectedFeatureNames.includes(type),
             )) && (
             <MarketplaceDetails
-              contractAddress={contractAddress}
+              contract={contract}
               trackingCategory={TRACKING_CATEGORY}
-              contractType={contractTypeData as "marketplace"}
               features={detectedFeatureNames}
             />
           )}
@@ -71,36 +60,30 @@ export const ContractOverviewPage: React.FC<ContractOverviewPageProps> = ({
             detectedFeatureNames.includes(type),
           ) && (
             <NFTDetails
-              contractAddress={contract.getAddress()}
-              chainId={contract.chainId}
+              contract={contract}
               trackingCategory={TRACKING_CATEGORY}
               features={detectedFeatureNames}
             />
           )}
-        {contract &&
-          ["ERC20"].some((type) => detectedFeatureNames.includes(type)) && (
-            <TokenDetails
-              contractAddress={contractAddress}
-              chainId={contract.chainId}
-            />
-          )}
+        {["ERC20"].some((type) => detectedFeatureNames.includes(type)) && (
+          <TokenDetails contract={contract} />
+        )}
         <LatestEvents
-          address={contractAddress}
+          contract={contract}
           trackingCategory={TRACKING_CATEGORY}
         />
-        {contract &&
-          ["PermissionsEnumerable"].some((type) =>
-            detectedFeatureNames.includes(type),
-          ) && (
-            <PermissionsTable
-              contract={contract}
-              trackingCategory={TRACKING_CATEGORY}
-            />
-          )}
+        {["PermissionsEnumerable"].some((type) =>
+          detectedFeatureNames.includes(type),
+        ) && (
+          <PermissionsTable
+            contract={contract}
+            trackingCategory={TRACKING_CATEGORY}
+          />
+        )}
         <BuildYourApp trackingCategory={TRACKING_CATEGORY} />
       </GridItem>
       <GridItem colSpan={{ xl: 3 }} as={Flex} direction="column" gap={6}>
-        <PublishedBy contractAddress={contractAddress} />
+        <PublishedBy contractAddress={contract.address} />
         {contract?.abi && <Extensions abi={contract?.abi} />}
         {(guides.length > 0 || templates.length > 0) && <Divider />}
         <RelevantDataSection

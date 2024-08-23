@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useMemo } from "react";
 import type { Chain } from "../../../../../chains/types.js";
-import { cacheChains } from "../../../../../chains/utils.js";
 import type { ThirdwebClient } from "../../../../../client/client.js";
 import type { Wallet } from "../../../../../wallets/interfaces/wallet.js";
 import type { SmartWalletOptions } from "../../../../../wallets/smart/types.js";
@@ -15,9 +14,10 @@ import {
   useSiweAuth,
 } from "../../../../core/hooks/auth/useSiweAuth.js";
 import type { ConnectEmbedProps } from "../../../../core/hooks/connection/ConnectEmbedProps.js";
-import { useActiveAccount } from "../../../hooks/wallets/useActiveAccount.js";
-import { useActiveWallet } from "../../../hooks/wallets/useActiveWallet.js";
-import { useIsAutoConnecting } from "../../../hooks/wallets/useIsAutoConnecting.js";
+import { useActiveAccount } from "../../../../core/hooks/wallets/useActiveAccount.js";
+import { useActiveWallet } from "../../../../core/hooks/wallets/useActiveWallet.js";
+import { useIsAutoConnecting } from "../../../../core/hooks/wallets/useIsAutoConnecting.js";
+import { useConnectionManager } from "../../../../core/providers/connection-manager.js";
 import { WalletUIStatesProvider } from "../../../providers/wallet-ui-states-provider.js";
 import { canFitWideModal } from "../../../utils/canFitWideModal.js";
 import { usePreloadWalletProviders } from "../../../utils/usePreloadWalletProviders.js";
@@ -35,42 +35,169 @@ import {
 } from "../constants.js";
 import { useConnectLocale } from "../locale/getConnectLocale.js";
 import type { ConnectLocale } from "../locale/types.js";
+import type { WelcomeScreen } from "../screens/types.js";
 import { ConnectModalContent } from "./ConnectModalContent.js";
 import { useSetupScreen } from "./screen.js";
 
 /**
- * A component that allows the user to connect their wallet.
+ * An inline wallet connection component that allows to:
  *
- * it renders the same UI as the [`ConnectButton`](https://portal.thirdweb.com/react/v4/components/ConnectButton) component's modal - but directly on the page instead of being in a modal.
+ * - Connect to 350+ external wallets
+ * - Connect with email, phone, passkey or socials
+ * - Convert any wallet to a ERC4337 smart wallet for gasless transactions
+ * - Sign in with ethereum (Auth)
  *
- * It only renders UI if wallet is not connected
+ * It renders the same UI as the [`ConnectButton`](https://portal.thirdweb.com/react/v5/ConnectButton) component's modal - but directly inline in the page instead of being in a modal.
+ *
+ * Once connected, the component does not render any UI. It only renders UI if wallet is not connected.
+ *
  * @example
+ *
+ * ## Default setup
+ *
  * ```tsx
+ * import { createThirdwebClient } from "thirdweb";
+ * import { ConnectEmbed } from "thirdweb/react";
+ *
+ * const client = createThirdwebClient({ clientId: "YOUR_CLIENT_ID" });
+ *
  * <ConnectEmbed
  *    client={client}
  * />
  * ```
+ *
+ * [View all available config options](https://portal.thirdweb.com/references/typescript/v5/ConnectEmbedProps)
+ *
+ *  ## Customization options
+ *
+ * ### Customizing wallet options
+ *
+ * ```tsx
+ * <ConnectEmbed
+ *    client={client}
+ *    wallets={[
+ *      createWallet("io.metamask"),
+ *      createWallet("com.coinbase.wallet"),
+ *      createWallet("me.rainbow"),
+ *    ]}
+ * />
+ * ```
+ *
+ * [View all available wallets](https://portal.thirdweb.com/typescript/v5/supported-wallets)
+ *
+ *  ### Customizing the default chain to connect to
+ *
+ * ```tsx
+ * import { base } from "thirdweb/chains";
+ *
+ * <ConnectEmbed
+ *   client={client}
+ *   chain={base}
+ * />
+ * ```
+ *
+ * ### Enabling Account Abstraction
+ *
+ * By passing the `accountAbstraction` prop, ALL connected wallets will be converted to smart accounts.
+ * And by setting `sponsorGas` to `true`, all transactions done with those smart accounts will be sponsored.
+ *
+ * ```tsx
+ * <ConnectEmbed
+ * client={client}
+ * accountAbstraction={{
+ *   chain: sepolia,
+ *   sponsorGas: true,
+ * }}
+ * />;
+ * ```
+ *
+ * ### Enabling sign in with ethereum (Auth)
+ *
+ * ```tsx
+ * <ConnectEmbed
+ * client={client}
+ * auth={{
+ *   isLoggedIn: async (address) => {
+ *     console.log("checking if logged in!", { address });
+ *     return await isLoggedIn();
+ *   },
+ *   doLogin: async (params) => {
+ *     console.log("logging in!");
+ *     await login(params);
+ *   },
+ *   getLoginPayload: async ({ address }) =>
+ *     generatePayload({ address }),
+ *   doLogout: async () => {
+ *     console.log("logging out!");
+ *     await logout();
+ *   },
+ * }}
+ * />;
+ * ```
+ *
+ * ### Customizing the theme
+ *
+ * ```tsx
+ * <ConnectEmbed
+ *    client={client}
+ *    theme="light"
+ * />
+ * ```
+ *
+ * For more granular control, you can also pass a custom theme object:
+ *
+ * ```tsx
+ * <ConnectEmbed
+ *    client={client}
+ *    theme={lightTheme({
+ *      colors: {
+ *        modalBg: "red",
+ *      },
+ *    })}
+ * />
+ * ```
+ *
+ * [View all available themes properties](https://portal.thirdweb.com/references/typescript/v5/Theme)
+ *
+ * ### Changing the display language
+ *
+ * ```tsx
+ * <ConnectEmbed
+ *    client={client}
+ *    locale="ja_JP"
+ * />
+ * ```
+ *
+ * [View all available locales](https://portal.thirdweb.com/references/typescript/v5/LocaleId)
+ *
  * @param props -
  * The props for the `ConnectEmbed` component.
  *
  * Refer to the [`ConnectEmbedProps`](https://portal.thirdweb.com/references/typescript/v5/ConnectEmbedProps) type for more details
+ *
+ * @returns A JSX element that renders the <ConnectEmbed> component.
  * @component
  */
 export function ConnectEmbed(props: ConnectEmbedProps) {
   const activeWallet = useActiveWallet();
   const activeAccount = useActiveAccount();
-  const siweAuth = useSiweAuth(activeWallet, props.auth);
+  const siweAuth = useSiweAuth(activeWallet, activeAccount, props.auth);
   const show =
     !activeAccount || (siweAuth.requiresAuth && !siweAuth.isLoggedIn);
+  const connectionManager = useConnectionManager();
 
-  // to update cached chains ASAP, we skip using useEffect - this does not trigger a re-render so it's fine
-  if (props.chains) {
-    cacheChains(props.chains);
-  }
+  // Add props.chain and props.chains to defined chains store
+  useEffect(() => {
+    if (props.chain) {
+      connectionManager.defineChains([props.chain]);
+    }
+  }, [props.chain, connectionManager]);
 
-  if (props.chain) {
-    cacheChains([props.chain]);
-  }
+  useEffect(() => {
+    if (props.chains) {
+      connectionManager.defineChains(props.chains);
+    }
+  }, [props.chains, connectionManager]);
 
   const wallets = useMemo(
     () =>
@@ -148,10 +275,8 @@ export function ConnectEmbed(props: ConnectEmbedProps) {
           client={props.client}
           connectLocale={localeQuery.data}
           size={modalSize}
-          // TODO: no welcome screen for embed right now?
-          // welcomeScreen={undefined}
           meta={meta}
-          isEmbed={true}
+          header={props.header}
           localeId={props.locale || "en_US"}
           onConnect={props.onConnect}
           recommendedWallets={props.recommendedWallets}
@@ -161,6 +286,7 @@ export function ConnectEmbed(props: ConnectEmbedProps) {
           className={props.className}
           modalSize={modalSize}
           style={props.style}
+          welcomeScreen={props.welcomeScreen}
         />
         {autoConnectComp}
       </WalletUIStatesProvider>
@@ -192,7 +318,13 @@ const ConnectEmbedContent = (props: {
     privacyPolicyUrl?: string;
   };
   size: "compact" | "wide";
-  isEmbed: boolean;
+  header:
+    | {
+        title?: string;
+        titleIcon?: string;
+      }
+    | true
+    | undefined;
   localeId: LocaleId;
   onConnect: ((wallet: Wallet) => void) | undefined;
   recommendedWallets: Wallet[] | undefined;
@@ -203,6 +335,7 @@ const ConnectEmbedContent = (props: {
       }
     | undefined;
   wallets: Wallet[];
+  welcomeScreen: WelcomeScreen | undefined;
 }) => {
   // const requiresSignIn = false;
   const screenSetup = useSetupScreen({
@@ -212,8 +345,8 @@ const ConnectEmbedContent = (props: {
   });
   const { setScreen, initialScreen, screen } = screenSetup;
   const activeWallet = useActiveWallet();
-  const siweAuth = useSiweAuth(activeWallet, props.auth);
   const activeAccount = useActiveAccount();
+  const siweAuth = useSiweAuth(activeWallet, activeAccount, props.auth);
 
   const isAutoConnecting = useIsAutoConnecting();
 
@@ -256,12 +389,18 @@ const ConnectEmbedContent = (props: {
         chains={props.chains}
         client={props.client}
         connectLocale={props.connectLocale}
-        meta={props.meta}
+        meta={{
+          ...props.meta,
+          title:
+            typeof props.header === "object" ? props.header.title : undefined,
+          titleIconUrl:
+            typeof props.header === "object"
+              ? props.header.titleIcon
+              : undefined,
+        }}
         size={props.size}
-        // TODO: no welcome screen for embed right now?
-        // welcomeScreen={undefined}
-        welcomeScreen={undefined}
-        isEmbed={props.isEmbed}
+        welcomeScreen={props.welcomeScreen}
+        hideHeader={!props.header}
         onConnect={props.onConnect}
         recommendedWallets={props.recommendedWallets}
         showAllWallets={props.showAllWallets}
@@ -306,8 +445,8 @@ export const EmbedContainer = /* @__PURE__ */ StyledDiv<{
     overflow: "hidden",
     fontFamily: theme.fontFamily,
     "& *::selection": {
-      backgroundColor: theme.colors.primaryText,
-      color: theme.colors.modalBg,
+      backgroundColor: theme.colors.selectedTextBg,
+      color: theme.colors.selectedTextColor,
     },
     "& *": {
       boxSizing: "border-box",

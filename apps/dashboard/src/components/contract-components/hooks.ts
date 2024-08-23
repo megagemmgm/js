@@ -1,4 +1,8 @@
-import { contractKeys, networkKeys } from "@3rdweb-sdk/react";
+import {
+  contractKeys,
+  networkKeys,
+  useDashboardEVMChainId,
+} from "@3rdweb-sdk/react";
 import { useMutationWithInvalidate } from "@3rdweb-sdk/react/hooks/query/useQueryWithNetwork";
 import {
   type QueryClient,
@@ -6,15 +10,13 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useSDK, useSDKChainId, useSigner } from "@thirdweb-dev/react";
+import { useSDK, useSigner } from "@thirdweb-dev/react";
 import {
   type Abi,
-  type ContractInfoSchema,
   type DeploymentTransaction,
   type ExtraPublishMetadata,
   type FeatureName,
   type FeatureWithEnabled,
-  type ProfileMetadata,
   type PublishedContract,
   type ThirdwebSDK,
   detectFeatures,
@@ -33,14 +35,16 @@ import {
   getZkTransactionsForDeploy,
   zkDeployContractFromUri,
 } from "@thirdweb-dev/sdk/evm/zksync";
-import type { SnippetApiResponse } from "components/contract-tabs/code/types";
+import type { ProfileMetadata, ProfileMetadataInput } from "constants/schemas";
+import type { providers } from "ethers";
 import { useSupportedChain } from "hooks/chains/configureChains";
 import { isEnsName, resolveEns } from "lib/ens";
 import { getDashboardChainRpc } from "lib/rpc";
 import { StorageSingleton, getThirdwebSDK } from "lib/sdk";
-import type { StaticImageData } from "next/image";
+import { useRouter } from "next/router";
 import { useMemo } from "react";
 import {
+  abstractTestnet,
   polygon,
   zkCandySepolia,
   zkSync,
@@ -53,41 +57,27 @@ import {
 } from "thirdweb/react";
 import { isAddress } from "thirdweb/utils";
 import invariant from "tiny-invariant";
-import type { z } from "zod";
+import { Web3Provider } from "zksync-ethers";
 import type { CustomContractDeploymentFormData } from "./contract-deploy-form/custom-contract";
-import {
-  getStepAddToRegistry,
-  getStepDeploy,
-  getStepSetNFTMetadata,
-  useDeployContextModal,
+import type {
+  DeployModalStep,
+  DeployStatusModal,
 } from "./contract-deploy-form/deploy-context-modal";
 import { uploadContractMetadata } from "./contract-deploy-form/deploy-form-utils";
 import type { ContractId } from "./types";
 import { addContractToMultiChainRegistry } from "./utils";
 
-interface ContractPublishMetadata {
-  image: string | StaticImageData;
-  name: string;
-  description?: string;
-  abi?: Abi;
-  bytecode?: string;
-  deployDisabled?: boolean;
-  info?: z.infer<typeof ContractInfoSchema>;
-  licenses?: string[];
-  // biome-ignore lint/suspicious/noExplicitAny: FIXME
-  compilerMetadata?: Record<string, any>;
-  // biome-ignore lint/suspicious/noExplicitAny: FIXME
-  analytics?: Record<string, any>;
-}
-
-interface RawPredeployMetadata {
-  name: string;
-  metadataUri: string;
-  bytecodeUri: string;
-  // biome-ignore lint/suspicious/noExplicitAny: FIXME
-  analytics?: Record<string, any>;
-  // biome-ignore lint/suspicious/noExplicitAny: FIXME
-  compilers?: Record<string, any>;
+function isChainIdZkSync(chainId?: number) {
+  switch (chainId) {
+    case zkSync.id:
+    case zkSyncSepolia.id:
+    case zkCandySepolia.id:
+    case abstractTestnet.id:
+      // TODO - add more ZK chains here
+      return true;
+    default:
+      return false;
+  }
 }
 
 // metadata PRE publish, only has the compiler output info (from CLI)
@@ -125,13 +115,12 @@ export async function fetchRawPredeployMetadataFromURI(contractId: ContractId) {
 }
 
 export function useContractRawPredeployMetadataFromURI(contractId: ContractId) {
-  return useQuery<RawPredeployMetadata>(
-    ["raw-predeploy-metadata", contractId],
-    () => fetchRawPredeployMetadataFromURI(contractId),
-    {
-      enabled: !!contractId,
-    },
-  );
+  return useQuery({
+    queryKey: ["raw-predeploy-metadata", contractId],
+    queryFn: () => fetchRawPredeployMetadataFromURI(contractId),
+
+    enabled: !!contractId,
+  });
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: FIXME
@@ -185,13 +174,11 @@ export async function fetchContractPublishMetadataFromURI(
 }
 
 export function useContractPublishMetadataFromURI(contractId: ContractId) {
-  return useQuery<ContractPublishMetadata>(
-    ["publish-metadata", contractId],
-    () => fetchContractPublishMetadataFromURI(contractId),
-    {
-      enabled: !!contractId,
-    },
-  );
+  return useQuery({
+    queryKey: ["publish-metadata", contractId],
+    queryFn: () => fetchContractPublishMetadataFromURI(contractId),
+    enabled: !!contractId,
+  });
 }
 
 export function useDefaultForwarders() {
@@ -199,11 +186,13 @@ export function useDefaultForwarders() {
   const provider = sdk?.getProvider();
   invariant(provider, "Require provider");
 
-  const chainId = useSDKChainId();
+  const chainId = useDashboardEVMChainId();
 
-  return useQuery(["default-forwarders", chainId], async () => {
-    const forwarders = await getTrustedForwarders(provider, StorageSingleton);
-    return forwarders;
+  return useQuery({
+    queryKey: ["default-forwarders", chainId],
+    queryFn: () => {
+      return getTrustedForwarders(provider, StorageSingleton);
+    },
   });
 }
 
@@ -212,21 +201,23 @@ export function useDefaultForwarders() {
 export function useContractPrePublishMetadata(uri: string, address?: string) {
   const contractIdIpfsHash = toContractIdIpfsHash(uri);
 
-  return useQuery(
-    ["pre-publish-metadata", uri, address],
-    async () => {
+  return useQuery({
+    queryKey: ["pre-publish-metadata", uri, address],
+    queryFn: async () => {
       invariant(address, "address is not defined");
       // TODO: Make this nicer.
       invariant(uri !== "ipfs://undefined", "uri can't be undefined");
-      const sdk = getThirdwebSDK(polygon.id, getDashboardChainRpc(polygon.id));
+      const sdk = getThirdwebSDK(
+        polygon.id,
+        getDashboardChainRpc(polygon.id, undefined),
+      );
       return await sdk
         ?.getPublisher()
         .fetchPrePublishMetadata(contractIdIpfsHash, address);
     },
-    {
-      enabled: !!uri && !!address,
-    },
-  );
+
+    enabled: !!uri && !!address,
+  });
 }
 
 async function fetchFullPublishMetadata(
@@ -252,12 +243,15 @@ async function fetchFullPublishMetadata(
 // Metadata POST publish, contains all the extra information filled in by the user
 export function useContractFullPublishMetadata(uri: string) {
   const contractIdIpfsHash = toContractIdIpfsHash(uri);
-  const sdk = getThirdwebSDK(polygon.id, getDashboardChainRpc(polygon.id));
+  const sdk = getThirdwebSDK(
+    polygon.id,
+    getDashboardChainRpc(polygon.id, undefined),
+  );
   const queryClient = useQueryClient();
 
-  return useQuery(
-    ["full-publish-metadata", uri],
-    async () => {
+  return useQuery({
+    queryKey: ["full-publish-metadata", uri],
+    queryFn: async () => {
       invariant(sdk, "sdk is not defined");
       // TODO: Make this nicer.
       invariant(uri !== "ipfs://undefined", "uri can't be undefined");
@@ -267,16 +261,21 @@ export function useContractFullPublishMetadata(uri: string) {
         queryClient,
       );
     },
-    {
-      enabled: !!uri && !!sdk,
-    },
-  );
+
+    enabled: !!uri && !!sdk,
+  });
 }
 
 async function fetchPublisherProfile(publisherAddress?: string | null) {
-  const sdk = getThirdwebSDK(polygon.id, getDashboardChainRpc(polygon.id));
+  const sdk = getThirdwebSDK(
+    polygon.id,
+    getDashboardChainRpc(polygon.id, undefined),
+  );
   invariant(publisherAddress, "address is not defined");
-  return await sdk.getPublisher().getPublisherProfile(publisherAddress);
+  return (await sdk
+    .getPublisher()
+    // todo: remove type-casting once we have replaced this method
+    .getPublisherProfile(publisherAddress)) as ProfileMetadata;
 }
 
 export function publisherProfileQuery(publisherAddress?: string) {
@@ -344,34 +343,38 @@ export function useAllVersions(
   publisherAddress?: string,
   contractName?: string,
 ) {
-  const sdk = getThirdwebSDK(polygon.id, getDashboardChainRpc(polygon.id));
-  return useQuery(
-    ["all-releases", publisherAddress, contractName],
-    () => fetchAllVersions(sdk, publisherAddress, contractName),
-    {
-      enabled: !!publisherAddress && !!contractName && !!sdk,
-    },
+  const sdk = getThirdwebSDK(
+    polygon.id,
+    getDashboardChainRpc(polygon.id, undefined),
   );
+  return useQuery({
+    queryKey: ["all-releases", publisherAddress, contractName],
+    queryFn: () => fetchAllVersions(sdk, publisherAddress, contractName),
+
+    enabled: !!publisherAddress && !!contractName && !!sdk,
+  });
 }
 
 export function usePublishedContractsFromDeploy(
   contractAddress?: string,
   chainId?: number,
 ) {
-  const activeChainId = useSDKChainId();
+  const activeChainId = useDashboardEVMChainId();
   const cId = chainId || activeChainId;
   const chainInfo = useSupportedChain(cId || -1);
 
-  return useQuery(
-    (networkKeys.chain(cId) as readonly unknown[]).concat([
+  return useQuery({
+    queryKey: (networkKeys.chain(cId) as readonly unknown[]).concat([
       "release-from-deploy",
       contractAddress,
     ]),
-    async () => {
+    queryFn: async () => {
       invariant(contractAddress, "contractAddress is not defined");
       invariant(cId, "chain not defined");
 
-      const rpcUrl = chainInfo ? getDashboardChainRpc(cId) : undefined;
+      const rpcUrl = chainInfo
+        ? getDashboardChainRpc(cId, chainInfo)
+        : undefined;
 
       invariant(rpcUrl, "rpcUrl not defined");
       const sdk = getThirdwebSDK(cId, rpcUrl);
@@ -382,18 +385,17 @@ export function usePublishedContractsFromDeploy(
 
       const polygonSdk = getThirdwebSDK(
         polygon.id,
-        getDashboardChainRpc(polygon.id),
+        getDashboardChainRpc(polygon.id, undefined),
       );
 
       return await polygonSdk
         .getPublisher()
         .resolvePublishMetadataFromCompilerMetadata(contractUri);
     },
-    {
-      enabled: !!contractAddress && !!cId && !!chainInfo,
-      retry: false,
-    },
-  );
+
+    enabled: !!contractAddress && !!cId && !!chainInfo,
+    retry: false,
+  });
 }
 
 export async function fetchPublishedContractInfo(
@@ -406,14 +408,16 @@ export async function fetchPublishedContractInfo(
 }
 
 export function usePublishedContractInfo(contract: PublishedContract) {
-  const sdk = getThirdwebSDK(polygon.id, getDashboardChainRpc(polygon.id));
-  return useQuery(
-    ["released-contract", contract],
-    () => fetchPublishedContractInfo(sdk, contract),
-    {
-      enabled: !!contract,
-    },
+  const sdk = getThirdwebSDK(
+    polygon.id,
+    getDashboardChainRpc(polygon.id, undefined),
   );
+  return useQuery({
+    queryKey: ["released-contract", contract],
+    queryFn: () => fetchPublishedContractInfo(sdk, contract),
+
+    enabled: !!contract,
+  });
 }
 export function usePublishedContractFunctions(contract: PublishedContract) {
   const publishedContractInfo = usePublishedContractInfo(contract);
@@ -537,7 +541,7 @@ export function useEditProfileMutation() {
   const address = useActiveAccount()?.address;
 
   return useMutationWithInvalidate(
-    async (data: ProfileMetadata) => {
+    async (data: ProfileMetadataInput) => {
       invariant(sdk, "sdk not provided");
       await sdk.getPublisher().updatePublisherProfile(data);
     },
@@ -559,34 +563,38 @@ type ContractDeployMutationParams = CustomContractDeploymentFormData & {
   addToDashboard: boolean;
 };
 
-export function useCustomContractDeployMutation(
-  ipfsHash: string,
-  version?: string,
-  forceDirectDeploy?: boolean,
-  {
+export function useCustomContractDeployMutation(options: {
+  ipfsHash: string;
+  version?: string;
+  forceDirectDeploy?: boolean;
+  hasContractURI?: boolean;
+  hasRoyalty?: boolean;
+  isSplit?: boolean;
+  isVote?: boolean;
+  isErc721SharedMetadadata?: boolean;
+  deployStatusModal: DeployStatusModal;
+}) {
+  const {
+    ipfsHash,
+    version,
     hasContractURI,
     hasRoyalty,
     isSplit,
     isVote,
     isErc721SharedMetadadata,
-  }: {
-    hasContractURI?: boolean;
-    hasRoyalty?: boolean;
-    isSplit?: boolean;
-    isVote?: boolean;
-    isErc721SharedMetadadata?: boolean;
-  } = {},
-) {
+    deployStatusModal,
+    forceDirectDeploy,
+  } = options;
   const sdk = useSDK();
   const queryClient = useQueryClient();
   const account = useActiveAccount();
   const walletAddress = account?.address;
   const chainId = useActiveWalletChain()?.id;
   const signer = useSigner();
-  const deployContext = useDeployContextModal();
   const { data: transactions } = useTransactionsForDeploy(ipfsHash);
   const fullPublishMetadata = useContractFullPublishMetadata(ipfsHash);
   const rawPredeployMetadata = useContractRawPredeployMetadataFromURI(ipfsHash);
+  const router = useRouter();
 
   const walletId = useActiveWallet()?.id;
 
@@ -603,32 +611,31 @@ export function useCustomContractDeployMutation(
 
       const requiresSignature = walletId !== "inApp";
 
-      const stepDeploy = getStepDeploy(
-        transactions?.length || 1,
-        requiresSignature,
-      );
-
-      const stepAddToRegistry = getStepAddToRegistry(requiresSignature);
-
-      const stepSetNFTMetadata = getStepSetNFTMetadata(requiresSignature);
+      const stepDeploy: DeployModalStep = {
+        signatureCount: requiresSignature ? transactions?.length || 1 : 0,
+        type: "deploy",
+      };
 
       const steps = [stepDeploy];
 
       if (isErc721SharedMetadadata) {
-        steps.push(stepSetNFTMetadata);
+        steps.push({
+          type: "setNFTMetadata",
+          signatureCount: requiresSignature ? 1 : 0,
+        });
       }
 
       if (data.addToDashboard) {
-        steps.push(stepAddToRegistry);
+        steps.push({
+          type: "import",
+          signatureCount: requiresSignature ? 1 : 0,
+        });
       }
 
       // open the modal with the appropriate steps
-      deployContext.open(steps);
+      deployStatusModal.open(steps);
 
-      const isZkSync =
-        chainId === zkSync.id ||
-        chainId === zkSyncSepolia.id ||
-        chainId === zkCandySepolia.id;
+      const isZkSync = isChainIdZkSync(chainId);
 
       let contractAddress: string;
       try {
@@ -687,6 +694,61 @@ export function useCustomContractDeployMutation(
 
         // deploy contract
         if (isZkSync) {
+          // Get metamask signer using zksync-ethers library -- for custom fields in signature
+          let deploySigner = signer;
+
+          if (fullPublishMetadata?.data?.deployType === "standard") {
+            // if its a direct deploy AND its zksync, use the ethers zksync signer for now
+            // NOTE: this only works with injected wallets
+            // TODO - implement deploying to zksync in v5 account and remove this
+            const fakeExternalProvider: providers.ExternalProvider = {
+              // fake tell it its metamask always (lul)
+              isMetaMask: true,
+              request({ method, params }) {
+                switch (method) {
+                  case "eth_accounts": {
+                    return Promise.resolve([walletAddress]);
+                  }
+                  case "eth_signTypedData_v4": {
+                    invariant(params?.[1], "invalid signTypedData call");
+                    // yo dawg, I heard you like signing typed data
+                    const { domain, types, message, primaryType } = JSON.parse(
+                      params[1],
+                    );
+                    return (signer as providers.JsonRpcSigner)._signTypedData(
+                      domain,
+                      // don't ask...
+                      { [primaryType]: types[primaryType] },
+                      message,
+                    );
+                  }
+                  case "eth_sendTransaction": {
+                    const tx = params?.[0];
+                    if (!tx) {
+                      throw new Error("No transaction provided");
+                    }
+                    return signer.sendTransaction(tx);
+                  }
+                  case "personal_sign": {
+                    const data = params?.[0];
+                    if (!data) {
+                      throw new Error("Nothing to sign");
+                    }
+                    return signer.signMessage(data);
+                  }
+                  default: {
+                    return (signer as providers.JsonRpcSigner)?.provider?.send(
+                      method,
+                      params ?? [],
+                    );
+                  }
+                }
+              },
+            };
+            const zkSigner = new Web3Provider(fakeExternalProvider).getSigner();
+            deploySigner = zkSigner;
+          }
+
           const publishUri = ipfsHash.startsWith("ipfs://")
             ? ipfsHash
             : `ipfs://${ipfsHash}`;
@@ -707,7 +769,7 @@ export function useCustomContractDeployMutation(
               contractAddress = await zkDeployContractFromUri(
                 publishUri,
                 Object.values(data.deployParams),
-                signer,
+                deploySigner,
                 StorageSingleton,
                 chainId as number,
                 {
@@ -722,7 +784,7 @@ export function useCustomContractDeployMutation(
               contractAddress = await zkDeployContractFromUri(
                 publishUri,
                 Object.values(data.deployParams),
-                signer,
+                deploySigner,
                 StorageSingleton,
                 chainId as number,
                 {
@@ -753,9 +815,6 @@ export function useCustomContractDeployMutation(
             const { compilerMetadata } = await fetchAndCacheDeployMetadata(
               publishUri,
               StorageSingleton,
-              {
-                compilerType: "zksolc",
-              },
             );
             uriToRegister = compilerMetadata.fetchedMetadataUri;
           }
@@ -764,7 +823,7 @@ export function useCustomContractDeployMutation(
           await addContractToMultiChainRegistry(
             {
               address: contractAddress,
-              chainId,
+              chainId: chainId as number,
               metadataURI: uriToRegister,
             },
             account,
@@ -795,10 +854,10 @@ export function useCustomContractDeployMutation(
           }
         }
 
-        deployContext.nextStep();
+        deployStatusModal.nextStep();
       } catch (e) {
         // failed to deploy contract - close modal for now
-        deployContext.close();
+        deployStatusModal.close();
         // re-throw error
         throw e;
       }
@@ -813,10 +872,10 @@ export function useCustomContractDeployMutation(
             image: data.contractMetadata?.image || "",
           });
 
-          deployContext.nextStep();
-        } catch (e) {
+          deployStatusModal.nextStep();
+        } catch {
           // failed to set metadata - for now just close the modal
-          deployContext.close();
+          deployStatusModal.close();
           // not re-throwing the error, this is not technically a failure to deploy, just to set metadata - the contract is deployed already at this stage
         }
       }
@@ -834,16 +893,15 @@ export function useCustomContractDeployMutation(
             300000n,
           );
 
-          deployContext.nextStep();
+          deployStatusModal.nextStep();
         }
-      } catch (e) {
+      } catch {
         // failed to add to dashboard - for now just close the modal
-        deployContext.close();
+        deployStatusModal.close();
+        router.replace(`/${chainId}/${contractAddress}`);
+
         // not re-throwing the error, this is not technically a failure to deploy, just to add to dashboard - the contract is deployed already at this stage
       }
-
-      // always close the modal
-      deployContext.close();
 
       return contractAddress;
     },
@@ -863,13 +921,13 @@ export function useTransactionsForDeploy(publishMetadataOrUri: string) {
   const sdk = useSDK();
   const chainId = useActiveWalletChain()?.id;
 
-  const queryResult = useQuery<DeploymentTransaction[]>(
-    ["transactions-for-deploy", publishMetadataOrUri, chainId],
-    async () => {
+  const queryResult = useQuery<DeploymentTransaction[]>({
+    queryKey: ["transactions-for-deploy", publishMetadataOrUri, chainId],
+    queryFn: async () => {
       invariant(sdk, "sdk not provided");
 
       // Handle separately for ZkSync
-      if (chainId === zkSync.id || chainId === zkSyncSepolia.id) {
+      if (isChainIdZkSync(chainId)) {
         return await getZkTransactionsForDeploy();
       }
 
@@ -879,10 +937,9 @@ export function useTransactionsForDeploy(publishMetadataOrUri: string) {
           : `ipfs://${publishMetadataOrUri}`,
       );
     },
-    {
-      enabled: !!publishMetadataOrUri && !!sdk,
-    },
-  );
+
+    enabled: !!publishMetadataOrUri && !!sdk,
+  });
 
   return queryResult;
 }
@@ -947,20 +1004,21 @@ export function usePublishedContractsQuery(
   address?: string,
   feature?: FeatureName,
 ) {
-  const sdk = getThirdwebSDK(polygon.id, getDashboardChainRpc(polygon.id));
+  const sdk = getThirdwebSDK(
+    polygon.id,
+    getDashboardChainRpc(polygon.id, undefined),
+  );
   const queryClient = useQueryClient();
-  return useQuery<PublishedContractDetails[]>(
-    ["published-contracts", address, feature],
-    () => {
+  return useQuery<PublishedContractDetails[]>({
+    queryKey: ["published-contracts", address, feature],
+    queryFn: () => {
       invariant(sdk, "sdk not provided");
       return feature && feature.length > 0
         ? fetchPublishedContractsWithFeature(sdk, queryClient, feature, address)
         : fetchPublishedContracts(sdk, queryClient, address);
     },
-    {
-      enabled: !!address && !!sdk,
-    },
-  );
+    enabled: !!address && !!sdk,
+  });
 }
 
 const ALWAYS_SUGGESTED = ["ContractMetadata", "Permissions"];
@@ -1088,41 +1146,15 @@ export function useContractEvents(abi: Abi) {
   return abi ? extractEventsFromAbi(abi) : undefined;
 }
 
-// TODO: this points to very old snippets, we need to update this!
-export function useFeatureContractCodeSnippetQuery(language: string) {
-  if (language === "javascript") {
-    // biome-ignore lint/style/noParameterAssign: FIXME
-    language = "sdk";
-  }
-
-  if (language === "react-native") {
-    // biome-ignore lint/style/noParameterAssign: FIXME
-    language = "react";
-  }
-
-  return useQuery(["feature-code-snippet", language], async () => {
-    // only allow specific languages
-    if (
-      ["go", "python", "react", "sdk", "unity"].includes(language) === false
-    ) {
-      throw new Error("Invalid language");
-    }
-    const res = await fetch(
-      `https://raw.githubusercontent.com/thirdweb-dev/docs/main/docs/feature_snippets_${language}.json`,
-    );
-    return (await res.json()) as SnippetApiResponse;
-  });
-}
-
 export function useCustomFactoryAbi(contractAddress: string, chainId: number) {
-  return useQuery(
-    ["custom-factory-abi", { contractAddress, chainId }],
-    async () => {
-      const sdk = getThirdwebSDK(chainId, getDashboardChainRpc(chainId));
+  const chain = useSupportedChain(chainId);
+  return useQuery({
+    queryKey: ["custom-factory-abi", { contractAddress, chainId }],
+    queryFn: async () => {
+      const sdk = getThirdwebSDK(chainId, getDashboardChainRpc(chainId, chain));
       return (await sdk.getContract(contractAddress)).abi;
     },
-    {
-      enabled: !!contractAddress && !!chainId,
-    },
-  );
+
+    enabled: !!contractAddress && !!chainId,
+  });
 }

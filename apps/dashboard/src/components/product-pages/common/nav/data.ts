@@ -111,7 +111,7 @@ export const PRODUCTS: SectionItemProps[] = [
     description:
       "Flexible user sign-up flow with wallet and social sign-in methods",
     link: "/connect",
-    dashboardLink: "/dashboard/connect/playground",
+    dashboardLink: "https://playground.thirdweb.com/connect/sign-in/button",
     icon: require("../../../../../public/assets/product-icons/wallet-sdk.png"),
     section: "connect",
     inLandingPage: true,
@@ -353,6 +353,14 @@ export const DEVELOPER_RESOURCES: SectionItemProps[] = [
     description: "Tools to create, build, and deploy web3 applications",
     link: "https://portal.thirdweb.com/cli",
     icon: require("../../../../../public/assets/product-icons/cli.svg"),
+    section: "tools",
+  },
+  {
+    name: "Transaction Simulator",
+    label: "transaction-simulator",
+    description: "",
+    link: "/tools/transaction-simulator",
+    icon: require("../../../../../public/assets/product-icons/dashboard.svg"),
     section: "tools",
   },
   {

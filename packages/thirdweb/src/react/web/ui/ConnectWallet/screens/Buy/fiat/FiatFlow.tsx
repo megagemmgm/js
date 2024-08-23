@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { ThirdwebClient } from "../../../../../../../client/client.js";
 import type { BuyWithFiatQuote } from "../../../../../../../pay/buyWithFiat/getQuote.js";
-import type { BuyWithFiatStatus } from "../../../../../../../pay/buyWithFiat/getStatus.js";
+import {
+  type BuyWithFiatStatus,
+  getBuyWithFiatStatus,
+} from "../../../../../../../pay/buyWithFiat/getStatus.js";
 import { isSwapRequiredPostOnramp } from "../../../../../../../pay/buyWithFiat/isSwapRequiredPostOnramp.js";
 import { openOnrampPopup } from "../openOnRamppopup.js";
 import { addPendingTx } from "../swap/pendingSwapTx.js";
@@ -43,12 +46,12 @@ export function FiatFlow(props: {
   client: ThirdwebClient;
   testMode: boolean;
   theme: "light" | "dark";
-  onViewPendingTx: () => void;
   openedWindow: Window | null;
   onDone: () => void;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
   payer: PayerInfo;
+  onSuccess: (status: BuyWithFiatStatus) => void;
 }) {
   const hasTwoSteps = isSwapRequiredPostOnramp(props.quote);
   const [screen, setScreen] = useState<Screen>(
@@ -64,6 +67,16 @@ export function FiatFlow(props: {
   const [popupWindow, setPopupWindow] = useState<Window | null>(
     props.openedWindow,
   );
+
+  const onPostOnrampSuccess = useCallback(() => {
+    // report the status of fiat status instead of post onramp swap status when post onramp swap is successful
+    getBuyWithFiatStatus({
+      intentId: props.quote.intentId,
+      client: props.client,
+    }).then((status) => {
+      props.onSuccess(status);
+    });
+  }, [props.onSuccess, props.quote.intentId, props.client]);
 
   if (screen.id === "step-1") {
     return (
@@ -93,7 +106,6 @@ export function FiatFlow(props: {
         client={props.client}
         intentId={props.quote.intentId}
         onBack={props.onBack}
-        onViewPendingTx={props.onViewPendingTx}
         hasTwoSteps={hasTwoSteps}
         openedWindow={popupWindow}
         quote={props.quote}
@@ -101,8 +113,9 @@ export function FiatFlow(props: {
         onShowSwapFlow={(_status) => {
           setScreen({ id: "postonramp-swap", data: _status });
         }}
-        isBuyForTx={props.isBuyForTx}
+        transactionMode={props.transactionMode}
         isEmbed={props.isEmbed}
+        onSuccess={props.onSuccess}
       />
     );
   }
@@ -115,14 +128,14 @@ export function FiatFlow(props: {
         quote={fiatQuoteToPartialQuote(props.quote)}
         client={props.client}
         onBack={props.onBack}
-        onViewPendingTx={props.onViewPendingTx}
         onDone={props.onDone}
         onSwapFlowStarted={() => {
           // no op
         }}
-        isBuyForTx={props.isBuyForTx}
+        transactionMode={props.transactionMode}
         isEmbed={props.isEmbed}
         payer={props.payer}
+        onSuccess={onPostOnrampSuccess}
       />
     );
   }

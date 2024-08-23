@@ -14,7 +14,6 @@ import {
   Stack,
   useDisclosure,
 } from "@chakra-ui/react";
-import { OnboardingBilling } from "components/onboarding/Billing";
 import { OnboardingModal } from "components/onboarding/Modal";
 import { format } from "date-fns";
 import { useTrack } from "hooks/analytics/useTrack";
@@ -23,6 +22,7 @@ import { useRouter } from "next/router";
 import { useCallback, useMemo, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { Heading, Text, TrackedLinkButton } from "tw-components";
+import { LazyOnboardingBilling } from "../../../../onboarding/LazyOnboardingBilling";
 import { ManageBillingButton } from "../ManageButton";
 import { RecurringPaymentFailureAlert } from "./RecurringPaymentFailureAlert";
 
@@ -141,9 +141,15 @@ export const BillingAlerts = () => {
       limits &&
       (usage.embeddedWallets.countWalletAddresses >= limits.embeddedWallets ||
         usage.storage.sumFileSizeBytes >= limits.storage);
+
+    const hasHardLimits = account?.status !== AccountStatus.ValidPayment;
+    const isFreePlan = account?.plan === "free";
+    const isGrowthPlan = account?.plan === "growth";
     const usageAlerts: AlertConditionType[] = [
       {
-        shouldShowAlert: !!(exceededUsage_50 && !exceededUsage_100),
+        // Show alert if user has exceeded 50% of their usage limit and has not yet exceeded 100% of their usage limit and has hard limits
+        shouldShowAlert:
+          !!(exceededUsage_50 && !exceededUsage_100) && hasHardLimits,
         key: "usage_50_alert",
         title: "You are approaching your free monthly credits",
         description:
@@ -152,7 +158,8 @@ export const BillingAlerts = () => {
         componentType: "usage",
       },
       {
-        shouldShowAlert: !!exceededUsage_100,
+        // if the user has exceeded 100% of their usage limit and is has hard limits enforced
+        shouldShowAlert: !!exceededUsage_100 && hasHardLimits,
         key: "usage_100_alert",
         title: "You have used all of your free monthly credits",
         description:
@@ -161,7 +168,18 @@ export const BillingAlerts = () => {
         componentType: "usage",
       },
       {
-        shouldShowAlert: hasUsageData && !!rateLimitedAt?.rpc,
+        // if its NOT a free plan and the user has exceeded 100% of their usage limit
+        shouldShowAlert: !!exceededUsage_100 && !hasHardLimits,
+        key: "usage_100_alert",
+        title: "You have used your included monthly credits",
+        // if free or growth plan, included the upgrade plan message
+        description: `You have exceeded your included monthly credits limit and are being charged for overages.${isFreePlan || (isGrowthPlan && " Consider upgrading your plan.")}`,
+        status: "warning",
+        componentType: "usage",
+      },
+      {
+        // only show RPC warning if the user has exceeded their RPC rate limit and has hard limits
+        shouldShowAlert: hasUsageData && !!rateLimitedAt?.rpc && hasHardLimits,
         key: "rate_rpc_alert",
         title: "You have exceeded your RPC rate limit",
         description:
@@ -170,7 +188,9 @@ export const BillingAlerts = () => {
         componentType: "usage",
       },
       {
-        shouldShowAlert: hasUsageData && !!rateLimitedAt?.storage,
+        // only show Storage warning if the user has exceeded their Storage rate limit and has hard limits
+        shouldShowAlert:
+          hasUsageData && !!rateLimitedAt?.storage && hasHardLimits,
         key: "rate_storage_alert",
         title: "You have exceeded your Storage Gateway rate limit",
         description:
@@ -323,7 +343,7 @@ export const BillingAlertNotification: React.FC<
           isOpen={isPaymentMethodOpen}
           onClose={onPaymentMethodClose}
         >
-          <OnboardingBilling
+          <LazyOnboardingBilling
             onSave={handlePaymentAdded}
             onCancel={onPaymentMethodClose}
           />

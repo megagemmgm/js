@@ -13,7 +13,6 @@ import {
   type PublishedMetadata,
   fetchSourceFilesFromMetadata,
 } from "@thirdweb-dev/sdk";
-import type { ThirdwebStorage } from "@thirdweb-dev/storage";
 import { ContractFunctionsOverview } from "components/contract-functions/contract-functions";
 import { replaceDeployerAddress } from "components/explore/publisher";
 import { ShareButton } from "components/share-buttom";
@@ -60,7 +59,7 @@ export interface ExtendedPublishedContract extends PublishedContractType {
   name: string;
   displayName?: string;
   description: string;
-  version: string;
+  version: string | undefined;
   publisher: string;
   tags?: string[];
   logo?: string;
@@ -147,7 +146,7 @@ export const PublishedContract: React.FC<PublishedContractProps> = ({
       PublishedContractOG.toUrl({
         name: publishedContractName,
         description: contract.description,
-        version: contract.version,
+        version: contract.version || "latest",
         publisher: publisherEnsOrAddress,
         extension: extensionNames,
         license: licenses,
@@ -180,9 +179,9 @@ Deploy it in one click`,
     return url.href;
   }, [publishedContractName, currentRoute]);
 
-  const sources = useQuery(
-    ["sources", contract],
-    async () => {
+  const sources = useQuery({
+    queryKey: ["sources", contract],
+    queryFn: async () => {
       invariant(
         contractPublishMetadata.data?.compilerMetadata?.sources,
         "no compilerMetadata sources available",
@@ -194,7 +193,7 @@ Deploy it in one click`,
               sources: contractPublishMetadata.data.compilerMetadata.sources,
             },
           } as unknown as PublishedMetadata,
-          StorageSingleton as ThirdwebStorage,
+          StorageSingleton,
         )
       )
         .map((source) => {
@@ -206,8 +205,8 @@ Deploy it in one click`,
         .slice()
         .reverse();
     },
-    { enabled: !!contractPublishMetadata.data?.compilerMetadata?.sources },
-  );
+    enabled: !!contractPublishMetadata.data?.compilerMetadata?.sources,
+  });
 
   const title = useMemo(() => {
     let clearType = "";

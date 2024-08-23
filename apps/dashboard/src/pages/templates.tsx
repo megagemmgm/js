@@ -1,6 +1,6 @@
+import { useForceDarkTheme } from "@/components/theme-provider";
 import {
   Box,
-  DarkMode,
   Flex,
   Image,
   LinkBox,
@@ -236,7 +236,7 @@ export const templates: TemplateCardProps[] = [
     id: "expo-starter",
     title: "Expo Starter",
     homepage: "",
-    repo: "https://github.com/thirdweb-example/node-starter",
+    repo: "https://github.com/thirdweb-example/expo-starter",
     description:
       "Starter kit to build with Expo and thirdweb without additional initial configuration.",
     img: "/assets/templates/expo-starter.png",
@@ -248,7 +248,7 @@ export const templates: TemplateCardProps[] = [
   {
     id: "vite-starter",
     title: "Vite Starter",
-    homepage: "vite-starter.thirdweb-example.com",
+    homepage: "https://vite-starter.thirdweb-example.com",
     repo: "https://github.com/thirdweb-example/vite-starter",
     description:
       "Starter kit to build with Vite and thirdweb without additional initial configuration.",
@@ -261,7 +261,7 @@ export const templates: TemplateCardProps[] = [
   {
     id: "next-starter",
     title: "Next Starter",
-    homepage: "next-starter.thirdweb-example.com",
+    homepage: "https://next-starter.thirdweb-example.com",
     repo: "https://github.com/thirdweb-example/next-starter",
     description:
       "Starter kit to build with Next and thirdweb without additional initial configuration.",
@@ -400,8 +400,9 @@ const description =
   "Start building with a library of quick-start templates for web3 apps and websites — for NFTs, marketplaces, and more. Get started.";
 
 const Templates: ThirdwebNextPage = () => {
+  useForceDarkTheme();
   return (
-    <DarkMode>
+    <>
       <NextSeo
         title={title}
         description={description}
@@ -467,7 +468,7 @@ const Templates: ThirdwebNextPage = () => {
       <GetStartedSection />
       <NewsletterSection />
       <HomepageFooter />
-    </DarkMode>
+    </>
   );
 };
 

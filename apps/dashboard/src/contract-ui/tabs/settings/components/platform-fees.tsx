@@ -1,19 +1,25 @@
 import { AdminOnly } from "@3rdweb-sdk/react/components/roles/admin-only";
 import { Flex, FormControl } from "@chakra-ui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { usePlatformFees, useUpdatePlatformFees } from "@thirdweb-dev/react";
-import {
-  CommonPlatformFeeSchema,
-  type ValidContractInstance,
-} from "@thirdweb-dev/sdk";
 import type { ExtensionDetectedState } from "components/buttons/ExtensionDetectButton";
 import { TransactionButton } from "components/buttons/TransactionButton";
 import { BasisPointsInput } from "components/inputs/BasisPointsInput";
+import { AddressOrEnsSchema, BasisPointsSchema } from "constants/schemas";
 import { SolidityInput } from "contract-ui/components/solidity-inputs";
 import { useTrack } from "hooks/analytics/useTrack";
 import { useTxNotifications } from "hooks/useTxNotifications";
 import { useForm } from "react-hook-form";
-import { useActiveAccount } from "thirdweb/react";
+import { toast } from "sonner";
+import { type ThirdwebContract, ZERO_ADDRESS } from "thirdweb";
+import {
+  getPlatformFeeInfo,
+  setPlatformFeeInfo,
+} from "thirdweb/extensions/common";
+import {
+  useActiveAccount,
+  useReadContract,
+  useSendAndConfirmTransaction,
+} from "thirdweb/react";
 import {
   Card,
   FormErrorMessage,
@@ -21,26 +27,40 @@ import {
   Heading,
   Text,
 } from "tw-components";
-import type { z } from "zod";
+import z from "zod";
 import { SettingDetectedState } from "./detected-state";
 
-export const SettingsPlatformFees = <
-  TContract extends ValidContractInstance | undefined,
->({
+// @internal
+const CommonPlatformFeeSchema = z.object({
+  /**
+   * platform fee basis points
+   */
+  platform_fee_basis_points: BasisPointsSchema.default(0),
+  /**
+   * platform fee recipient address
+   */
+  platform_fee_recipient: AddressOrEnsSchema.default(ZERO_ADDRESS),
+});
+
+export const SettingsPlatformFees = ({
   contract,
   detectedState,
 }: {
-  contract: TContract;
+  contract: ThirdwebContract;
   detectedState: ExtensionDetectedState;
 }) => {
   const trackEvent = useTrack();
-  const query = usePlatformFees(contract);
   const address = useActiveAccount()?.address;
-  const mutation = useUpdatePlatformFees(contract);
+  const { mutate, isPending } = useSendAndConfirmTransaction();
+  const { data, isLoading } = useReadContract(getPlatformFeeInfo, { contract });
+  const platformFeeInfo = data
+    ? { platform_fee_recipient: data[0], platform_fee_basis_points: data[1] }
+    : undefined;
+
   const form = useForm<z.input<typeof CommonPlatformFeeSchema>>({
     resolver: zodResolver(CommonPlatformFeeSchema),
-    defaultValues: query.data,
-    values: query.data,
+    defaultValues: platformFeeInfo,
+    values: platformFeeInfo,
   });
 
   const { onSuccess, onError } = useTxNotifications(
@@ -54,21 +74,33 @@ export const SettingsPlatformFees = <
       <SettingDetectedState type="platformFee" detectedState={detectedState} />
       <Flex
         as="form"
-        onSubmit={form.handleSubmit((d) => {
+        onSubmit={form.handleSubmit((data) => {
           trackEvent({
             category: "settings",
             action: "set-platform-fees",
             label: "attempt",
           });
-          // if we switch back to mutateAsync then *need* to catch errors
-          mutation.mutate(d, {
-            onSuccess: (_data, variables) => {
+          // In the v4 hook we defaulted recipient to address_zero and bps to `0`
+          // but let's actually throw an error here for better transparency
+          if (!data.platform_fee_basis_points) {
+            return toast.error("Please enter valid basis points.");
+          }
+          if (!data.platform_fee_recipient) {
+            return toast.error("Please enter a valid platform fee recipient.");
+          }
+          const transaction = setPlatformFeeInfo({
+            contract,
+            platformFeeRecipient: data.platform_fee_recipient,
+            platformFeeBps: BigInt(data.platform_fee_basis_points),
+          });
+          mutate(transaction, {
+            onSuccess: () => {
               trackEvent({
                 category: "settings",
                 action: "set-platform-fees",
                 label: "success",
               });
-              form.reset(variables);
+              form.reset(data);
               onSuccess();
             },
             onError: (error) => {
@@ -87,7 +119,7 @@ export const SettingsPlatformFees = <
         <Flex p={{ base: 6, md: 10 }} as="section" direction="column" gap={4}>
           <Heading size="title.sm">Platform fee</Heading>
           <Text size="body.md" fontStyle="italic">
-            Determine the address that should receive the revenue from platform
+            The wallet address that should receive the revenue from platform
             fees.
           </Text>
           <Flex gap={4} direction={{ base: "column", md: "row" }}>
@@ -104,7 +136,7 @@ export const SettingsPlatformFees = <
                 formContext={form}
                 variant="filled"
                 {...form.register("platform_fee_recipient")}
-                isDisabled={!address}
+                isDisabled={!address || isPending}
               />
               <FormErrorMessage>
                 {
@@ -133,6 +165,7 @@ export const SettingsPlatformFees = <
                     shouldTouch: true,
                   })
                 }
+                isDisabled={isPending}
               />
               <FormErrorMessage>
                 {
@@ -145,13 +178,13 @@ export const SettingsPlatformFees = <
             </FormControl>
           </Flex>
         </Flex>
-        <AdminOnly contract={contract as ValidContractInstance}>
+        <AdminOnly contract={contract}>
           <TransactionButton
             colorScheme="primary"
             transactionCount={1}
-            isDisabled={query.isLoading || !form.formState.isDirty}
+            isDisabled={isLoading || !form.formState.isDirty}
             type="submit"
-            isLoading={mutation.isLoading}
+            isLoading={isPending}
             loadingText="Saving..."
             size="md"
             borderRadius="xl"

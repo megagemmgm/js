@@ -114,7 +114,7 @@ export const Modal: React.FC<{
               {!props.hideCloseIcon && (
                 <CrossContainer>
                   <Dialog.Close asChild>
-                    <IconButton type="button" aria-label="Close">
+                    <IconButton autoFocus type="button" aria-label="Close">
                       <Cross2Icon
                         width={iconSize.md}
                         height={iconSize.md}
@@ -171,7 +171,7 @@ const DialogContent = /* @__PURE__ */ StyledDiv((_) => {
     background: theme.colors.modalBg,
     "--bg": theme.colors.modalBg,
     color: theme.colors.primaryText,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     position: "fixed",
     top: "50%",
     left: "50%",
@@ -196,7 +196,7 @@ const DialogContent = /* @__PURE__ */ StyledDiv((_) => {
       transform: "none",
       width: "100vw",
       animation: `${modalAnimationMobile} 0.35s cubic-bezier(0.15, 1.15, 0.6, 1)`,
-      borderRadius: radius.xxl,
+      borderRadius: radius.xl,
       borderBottomRightRadius: 0,
       borderBottomLeftRadius: 0,
       maxWidth: "none !important",

@@ -14,8 +14,6 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import type { NFTContract } from "@thirdweb-dev/react";
-import { detectFeatures } from "components/contract-components/utils";
 import { MediaCell } from "components/contract-pages/table/table-columns/cells/media-cell";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
@@ -37,25 +35,30 @@ import {
   nextTokenIdToMint as erc721NextTokenIdToMint,
   totalSupply as erc721TotalSupply,
   getNFTs as getErc721NFTs,
+  isERC721,
 } from "thirdweb/extensions/erc721";
 import {
   nextTokenIdToMint as erc1155NextTokenIdToMint,
   getNFTs as getErc1155NFTs,
+  isERC1155,
 } from "thirdweb/extensions/erc1155";
 import { useReadContract } from "thirdweb/react";
 import { Heading, Text } from "tw-components";
 import { AddressCopyButton } from "tw-components/AddressCopyButton";
 
 interface ContractOverviewNFTGetAllProps {
-  oldContract: NFTContract;
   contract: ThirdwebContract;
 }
 export const NFTGetAllTable: React.FC<ContractOverviewNFTGetAllProps> = ({
-  oldContract,
   contract,
 }) => {
-  const isErc721 = detectFeatures(oldContract, ["ERC721"]);
-  const isErc1155 = detectFeatures(oldContract, ["ERC1155"]);
+  const { data: isErc721, isLoading: checking721 } = useReadContract(isERC721, {
+    contract,
+  });
+  const { data: isErc1155, isLoading: checking1155 } = useReadContract(
+    isERC1155,
+    { contract },
+  );
   const router = useRouter();
 
   const tableColumns = useMemo(() => {
@@ -72,10 +75,9 @@ export const NFTGetAllTable: React.FC<ContractOverviewNFTGetAllProps> = ({
       {
         Header: "Media",
         accessor: (row) => row.metadata,
-        Cell: (
-          cell: CellProps<NFT, NFT["metadata"]>,
-          // @ts-expect-error - types are not compatible yet until we have NFTRenderer in v5
-        ) => <MediaCell cell={cell} />,
+        Cell: (cell: CellProps<NFT, NFT["metadata"]>) => (
+          <MediaCell cell={cell} />
+        ),
       },
       {
         Header: "Name",
@@ -136,6 +138,10 @@ export const NFTGetAllTable: React.FC<ContractOverviewNFTGetAllProps> = ({
       start: queryParams.start,
       count: queryParams.count,
       includeOwners: true,
+      queryOptions: {
+        // Only load once finishing checking if the contract is either 721 or 1155
+        enabled: !checking1155 && !checking721,
+      },
     },
   );
 
@@ -144,11 +150,20 @@ export const NFTGetAllTable: React.FC<ContractOverviewNFTGetAllProps> = ({
     isErc1155 ? erc1155NextTokenIdToMint : erc721NextTokenIdToMint,
     {
       contract,
+      queryOptions: {
+        // Only load once finishing checking if the contract is either 721 or 1155
+        enabled: !checking1155 && !checking721,
+      },
     },
   );
   const totalSupplyQuery = useReadContract(erc721TotalSupply, {
     contract,
+    queryOptions: {
+      // Only load once finishing checking if the contract is either 721 or 1155
+      enabled: !checking1155 && !checking721,
+    },
   });
+
   // Anything bigger and the table breaks
   const safeTotalCount = useMemo(() => {
     const computedSupply = (() => {
@@ -215,7 +230,7 @@ export const NFTGetAllTable: React.FC<ContractOverviewNFTGetAllProps> = ({
 
   return (
     <Flex gap={4} direction="column">
-      <TableContainer maxW="100%">
+      <TableContainer maxW="100%" className="relative">
         {getNFTsQuery.isFetching && (
           <Spinner
             color="primary"

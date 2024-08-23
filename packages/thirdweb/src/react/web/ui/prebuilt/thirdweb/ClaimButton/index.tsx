@@ -4,9 +4,14 @@ import {
   type ThirdwebContract,
   getContract,
 } from "../../../../../../contract/contract.js";
+import { getContractMetadata } from "../../../../../../extensions/common/read/getContractMetadata.js";
+import { getNFT } from "../../../../../../extensions/erc1155/read/getNFT.js";
 import type { PreparedTransaction } from "../../../../../../transaction/prepare-transaction.js";
+import type { BaseTransactionOptions } from "../../../../../../transaction/types.js";
 import type { Account } from "../../../../../../wallets/interfaces/wallet.js";
-import { useActiveAccount } from "../../../../hooks/wallets/useActiveAccount.js";
+import { useReadContract } from "../../../../../core/hooks/contract/useReadContract.js";
+import { useSendAndConfirmTransaction } from "../../../../../core/hooks/transaction/useSendAndConfirmTransaction.js";
+import { useActiveAccount } from "../../../../../core/hooks/wallets/useActiveAccount.js";
 import { TransactionButton } from "../../../TransactionButton/index.js";
 import type {
   ClaimButtonProps,
@@ -17,24 +22,26 @@ import type {
 } from "./types.js";
 
 /**
- * This button is used to claim tokens (NFT or ERC20) from a given thirdweb Drop contract
+ * This button is used to claim tokens (NFT or ERC20) from a given thirdweb Drop contract.
  *
  * there are 3 type of Drop contract: NFT Drop (DropERC721), Edition Drop (DropERC1155) and Token Drop (DropERC20)
  *
  * Learn more: https://thirdweb.com/explore/drops
+ *
  *
  * Note: This button only works with thirdweb Drop contracts.
  * For custom contract, please use [`TransactionButton`](https://portal.thirdweb.com/references/typescript/v5/TransactionButton)
  * @param props
  * @returns A wrapper for TransactionButton
  *
+ * @component
  * @example
  *
+ * Example for claiming NFT from an NFT Drop contract
  * ```tsx
  * import { ClaimButton } from "thirdweb/react";
  * import { ethereum } from "thirdweb/chains";
  *
- * // For NFT Drop (ERC721)
  * <ClaimButton
  *   contractAddress="0x..." // contract address of the NFT Drop
  *   chain={ethereum}
@@ -46,9 +53,10 @@ import type {
  * >
  *   Claim now
  * </ClaimButton>
+ * ```
  *
- *
- * // For Edition Drop (ERC1155)
+ * For Edition Drop (ERC1155)
+ * ```tsx
  * <ClaimButton
  *   contractAddress="0x..." // contract address of the Edition Drop
  *   chain={ethereum}
@@ -61,9 +69,10 @@ import type {
  * >
  *   Claim now
  * </ClaimButton>
+ * ```
  *
- *
- * // For Token Drop (ERC20)
+ * For Token Drop (ERC20)
+ * ```tsx
  * <ClaimButton
  *   contractAddress="0x..." // contract address of the Token Drop
  *   chain={ethereum}
@@ -76,28 +85,106 @@ import type {
  * >
  *   Claim now
  * </ClaimButton>
+ * ```
+ *
+ * Attach custom Pay metadata
+ * ```tsx
+ * <ClaimButton
+ *   payModal={{
+ *     metadata: {
+ *       name: "Van Gogh Starry Night",
+ *       image: "https://unsplash.com/starry-night.png"
+ *     }
+ *   }}
+ * >...</ClaimButton>
  *
  * ```
+ *
+ * Since this button uses the `TransactionButton`, it can take in any props that can be passed
+ * to the [`TransactionButton`](https://portal.thirdweb.com/references/typescript/v5/TransactionButton)
+ *
+ *
+ * For error handling & callbacks on transaction-sent and transaction-confirmed,
+ * please refer to the TransactionButton docs.
  */
 export function ClaimButton(props: ClaimButtonProps) {
-  const { children, contractAddress, client, chain, claimParams } = props;
+  const { children, contractAddress, client, chain, claimParams, payModal } =
+    props;
+  const defaultPayModalMetadata = payModal ? payModal.metadata : undefined;
   const contract = getContract({
     address: contractAddress,
     client,
     chain,
   });
+
+  const { data: payMetadata } = useReadContract(getPayMetadata, {
+    contract,
+    tokenId: claimParams.type === "ERC1155" ? claimParams.tokenId : undefined,
+    queryOptions: {
+      enabled: !defaultPayModalMetadata,
+    },
+  });
   const account = useActiveAccount();
-  // TODO (pay): fetch nft metadata and set it as the payOptions metadata
+  const { mutateAsync } = useSendAndConfirmTransaction();
   return (
     <TransactionButton
-      transaction={async () =>
-        await getClaimTransaction({ contract, account, claimParams })
-      }
+      payModal={{
+        metadata: defaultPayModalMetadata || payMetadata,
+        ...payModal,
+      }}
+      transaction={async () => {
+        if (!account) {
+          throw new Error("No account detected");
+        }
+        const [claimTx, { getApprovalForTransaction }] = await Promise.all([
+          getClaimTransaction({
+            contract,
+            account,
+            claimParams,
+          }),
+          import(
+            "../../../../../../extensions/erc20/write/getApprovalForTransaction.js"
+          ),
+        ]);
+        const approveTx = await getApprovalForTransaction({
+          transaction: claimTx,
+          account,
+        });
+        if (approveTx) {
+          await mutateAsync(approveTx);
+        }
+        return claimTx;
+      }}
       {...props}
     >
       {children}
     </TransactionButton>
   );
+}
+
+/**
+ * We can only get the image and name for Edition Drop
+ * For NFT Drop and Token Drop we fall back to the name & image of the contract
+ * @internal
+ */
+export async function getPayMetadata(
+  options: BaseTransactionOptions<{ tokenId?: bigint }>,
+): Promise<{ name?: string; image?: string }> {
+  const { contract, tokenId } = options;
+  const [contractMetadata, nft] = await Promise.all([
+    getContractMetadata(options),
+    tokenId ? getNFT({ contract, tokenId }) : undefined,
+  ]);
+  if (tokenId) {
+    return {
+      image: nft?.metadata?.image,
+      name: nft?.metadata?.name,
+    };
+  }
+  return {
+    image: contractMetadata?.image,
+    name: contractMetadata?.name,
+  };
 }
 
 /**

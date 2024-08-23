@@ -1,9 +1,8 @@
 import { AdminOnly } from "@3rdweb-sdk/react/components/roles/admin-only";
-import { Box, Flex, Icon, SimpleGrid } from "@chakra-ui/react";
-import type { DropContract } from "@thirdweb-dev/react";
-import type { ValidContractInstance } from "@thirdweb-dev/sdk";
+import { Flex, Icon, SimpleGrid } from "@chakra-ui/react";
 import { FiX } from "react-icons/fi";
 import { RxCaretDown, RxCaretUp } from "react-icons/rx";
+import type { ThirdwebContract } from "thirdweb";
 import { Badge, Button, Card, Heading, Text } from "tw-components";
 import { ClaimConditionTypeData, useClaimConditionsFormContext } from ".";
 import { PricePreview } from "../price-preview";
@@ -14,11 +13,10 @@ import { MaxClaimablePerWalletInput } from "./Inputs/MaxClaimablePerWalletInput"
 import { MaxClaimableSupplyInput } from "./Inputs/MaxClaimableSupplyInput";
 import { PhaseNameInput } from "./Inputs/PhaseNameInput";
 import { PhaseStartTimeInput } from "./Inputs/PhaseStartTimeInput";
-import { WaitingTimeInput } from "./Inputs/WaitingTimeInput";
 import { CustomFormGroup } from "./common";
 
 interface ClaimConditionsPhaseProps {
-  contract: DropContract;
+  contract: ThirdwebContract;
   onRemove: () => void;
   isLoading: boolean;
 }
@@ -68,7 +66,7 @@ export const ClaimConditionsPhase: React.FC<ClaimConditionsPhaseProps> = ({
           >
             {field.isEditing ? "Collapse" : isAdmin ? "Edit" : "See Phase"}
           </Button>
-          <AdminOnly contract={contract as ValidContractInstance}>
+          <AdminOnly contract={contract}>
             <Button
               variant="ghost"
               onClick={onRemove}
@@ -158,11 +156,6 @@ export const ClaimConditionsPhase: React.FC<ClaimConditionsPhaseProps> = ({
             claimConditionType === "creator" ? null : (
               <CustomFormGroup>
                 <MaxClaimablePerWalletInput />
-                {isClaimPhaseV1 ? (
-                  <WaitingTimeInput />
-                ) : (
-                  <Box w="100%" display={{ base: "none", md: "block" }} />
-                )}
               </CustomFormGroup>
             )}
 

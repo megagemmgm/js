@@ -18,6 +18,7 @@ import { setContractURI } from "../../extensions/marketplace/__generated__/IMark
 import { estimateGasCost } from "../../transaction/actions/estimate-gas-cost.js";
 import { sendAndConfirmTransaction } from "../../transaction/actions/send-and-confirm-transaction.js";
 import { sendBatchTransaction } from "../../transaction/actions/send-batch-transaction.js";
+import { waitForReceipt } from "../../transaction/actions/wait-for-tx-receipt.js";
 import { isContractDeployed } from "../../utils/bytecode/is-contract-deployed.js";
 import type { Account, Wallet } from "../interfaces/wallet.js";
 import { generateAccount } from "../utils/generateAccount.js";
@@ -38,7 +39,7 @@ const contract = getContract({
 });
 const factoryAddress = "0x564cf6453a1b0FF8DB603E92EA4BbD410dea45F3"; // pre 712
 
-describe.runIf(process.env.TW_SECRET_KEY)(
+describe.runIf(process.env.TW_SECRET_KEY).sequential(
   "SmartWallet core tests",
   {
     retry: 0,
@@ -139,6 +140,11 @@ describe.runIf(process.env.TW_SECRET_KEY)(
         ],
       });
       expect(tx.transactionHash).toHaveLength(66);
+      await waitForReceipt({
+        client,
+        transactionHash: tx.transactionHash,
+        chain,
+      });
       const balance = await balanceOf({
         contract,
         owner: smartWalletAddress,
@@ -190,8 +196,8 @@ describe.runIf(process.env.TW_SECRET_KEY)(
         events: [adminUpdatedEvent()],
         logs: receipt.logs,
       });
-      expect(logs[0]?.args.signer).toBe(newAdmin.address);
-      expect(logs[0]?.args.isAdmin).toBe(true);
+      expect(logs.some((l) => l.args.signer === newAdmin.address)).toBe(true);
+      expect(logs.some((l) => l.args.isAdmin)).toBe(true);
     });
 
     it("can use a different factory without replay protectin", async () => {

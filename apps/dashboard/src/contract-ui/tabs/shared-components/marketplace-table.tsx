@@ -16,10 +16,8 @@ import {
   Tr,
   usePrevious,
 } from "@chakra-ui/react";
-import type { MarketplaceV3 } from "@thirdweb-dev/sdk";
 import { MediaCell } from "components/contract-pages/table/table-columns/cells/media-cell";
 import { ListingDrawer } from "contract-ui/tabs/shared-components/listing-drawer";
-import { BigNumber } from "ethers";
 import {
   type Dispatch,
   type SetStateAction,
@@ -36,10 +34,12 @@ import {
 } from "react-icons/md";
 import type { UseQueryResult } from "react-query-v5";
 import { type Cell, type Column, usePagination, useTable } from "react-table";
+import type { ThirdwebContract } from "thirdweb";
 import type {
   DirectListing,
   EnglishAuction,
 } from "thirdweb/extensions/marketplace";
+import { min } from "thirdweb/utils";
 import { Button, Text } from "tw-components";
 import { AddressCopyButton } from "tw-components/AddressCopyButton";
 import { LISTING_STATUS } from "./types";
@@ -88,7 +88,7 @@ const tableColumns: Column<DirectListing | EnglishAuction>[] = [
 ];
 
 interface MarketplaceTableProps {
-  contract: MarketplaceV3;
+  contract: ThirdwebContract;
   getAllQueryResult: UseQueryResult<DirectListing[] | EnglishAuction[]>;
   getValidQueryResult: UseQueryResult<DirectListing[] | EnglishAuction[]>;
   totalCountQuery: UseQueryResult<bigint>;
@@ -162,8 +162,10 @@ export const MarketplaceTable: React.FC<MarketplaceTableProps> = ({
       manualPagination: true,
       pageCount: Math.max(
         Math.ceil(
-          BigNumber.from(totalCountQuery.data || 0).toNumber() /
-            queryParams.count,
+          Number(
+            // To avoid overflow issue
+            min(totalCountQuery.data || 0n, BigInt(Number.MAX_SAFE_INTEGER)),
+          ) / queryParams.count,
         ),
         1,
       ),
@@ -200,7 +202,7 @@ export const MarketplaceTable: React.FC<MarketplaceTableProps> = ({
         </Button>
       </ButtonGroup>
 
-      <TableContainer maxW="100%">
+      <TableContainer maxW="100%" className="relative">
         {((listingsToShow === "all" && getAllQueryResult.isFetching) ||
           (listingsToShow === "valid" && getValidQueryResult.isFetching)) && (
           <Spinner

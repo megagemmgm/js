@@ -7,19 +7,14 @@ const SIDEBAR_SECTIONS = [
     title: "Connect",
     items: [
       {
-        id: "playground",
-        title: "Playground",
-        href: "/dashboard/connect/playground",
+        id: "embedded-wallets",
+        title: "In-App Wallets",
+        href: "/dashboard/connect/in-app-wallets",
       },
       {
         id: "analytics",
         title: "Analytics",
         href: "/dashboard/connect/analytics",
-      },
-      {
-        id: "embedded-wallets",
-        title: "In-App Wallets",
-        href: "/dashboard/connect/in-app-wallets",
       },
       {
         id: "ecosystem",
@@ -36,6 +31,11 @@ const SIDEBAR_SECTIONS = [
         title: "Pay",
         href: "/dashboard/connect/pay",
       },
+      {
+        id: "playground",
+        title: "Playground",
+        href: "https://playground.thirdweb.com/connect/sign-in/button",
+      },
     ],
   },
 ] satisfies Array<SidebarNavSection>;
@@ -44,7 +44,7 @@ export default function DashboardConnectLayout(props: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col md:flex-row md:h-full container">
+    <div className="flex flex-col md:flex-row md:h-full container px-4">
       <SidebarNav sections={SIDEBAR_SECTIONS} />
       {props.children}
     </div>

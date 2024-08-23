@@ -4,17 +4,19 @@ import {
   type TransactionButtonProps,
   useTransactionButtonMutation,
 } from "../../../core/hooks/transaction/transaction-button-utils.js";
+import { useActiveAccount } from "../../../core/hooks/wallets/useActiveAccount.js";
 import { useSendTransaction } from "../../hooks/transaction/useSendTransaction.js";
-import { useActiveAccount } from "../../hooks/wallets/useActiveAccount.js";
 import { Spinner } from "../components/Spinner.js";
 import { Button } from "../components/buttons.js";
 
 /**
  * TransactionButton component is used to render a button that triggers a transaction.
- * - It shows a "Switch Network" button if the connected wallet is on a different chain than the transaction.
+ * It shows a "Switch Network" button if the connected wallet is on a different chain than the transaction.
  * @param props - The props for this component.
  * Refer to [TransactionButtonProps](https://portal.thirdweb.com/references/typescript/v5/TransactionButtonProps) for details.
  * @example
+ *
+ * ### Basic usage
  * ```tsx
  * <TransactionButton
  *   transaction={() => {}}
@@ -24,16 +26,93 @@ import { Button } from "../components/buttons.js";
  *   Confirm Transaction
  * </TransactionButton>
  * ```
- * Customize the styling by passing the `unstyled` prop and your inline styles and/or classes:
+ *
+ * ### Customize the styling by passing the `unstyled` prop and your inline styles and/or classes:
  * ```tsx
  * <TransactionButton
  *   transaction={() => {}}
- *   onTransactionConfirmed={handleSuccess}
- *   onError={handleError}
  *   unstyled
  *   className="bg-white text-black rounded-md p-4 flex items-center justify-center"
  * >
  *   Confirm Transaction
+ * </TransactionButton>
+ * ```
+ *
+ * ### Handle errors
+ * ```tsx
+ * <TransactionButton
+ *   transaction={() => ...}
+ *   onError={(err) => {
+ *     alert(err.message);
+ *     // Add your own logic here
+ *   }}
+ * >
+ *   Confirm Transaction
+ * </TransactionButton>
+ * ```
+ *
+ * ### Alert when a transaction is sent
+ * ```tsx
+ * <TransactionButton
+ *   transaction={() => ...}
+ *   onTransactionSent={(tx) => {
+ *     alert("transaction sent!");
+ *     // Add your own logic here. For example, a toast
+ *   }}
+ * >
+ *   Confirm Transaction
+ * </TransactionButton>
+ * ```
+ *
+ * ### Alert when a transaction is completed
+ * ```tsx
+ * <TransactionButton
+ *   transaction={() => ...}
+ *   onTransactionConfirmed={(tx) => {
+ *     alert("transaction sent!");
+ *     console.log(tx);
+ *     // Add your own logic here. For example, a toast
+ *   }}
+ * >
+ *   Confirm Transaction
+ * </TransactionButton>
+ * ```
+ *
+ * ### The onClick prop, if provided, will be called before the transaction is sent.
+ * ```tsx
+ * <TransactionButton
+ *   onClick={() => alert("Transaction is about to be sent")}
+ *   transaction={...}
+ * >
+ *   ...
+ * </TransactionButton>
+ * ```
+ *
+ * ### Attach custom Pay metadata
+ * ```tsx
+ * <TransactionButton
+ *   payModal={{
+ *     // This image & title will show up in the Pay modal
+ *     metadata: {
+ *       name: "Van Gogh Starry Night",
+ *       image: "https://unsplash.com/starry-night.png"
+ *     }
+ *   }}
+ * >
+ *   ...
+ * </TransactionButton>
+ * ```
+ *
+ * ### Gasless usage with [thirdweb Engine](https://portal.thirdweb.com/engine)
+ * ```tsx
+ * <TransactionButton
+ *   gasless={{
+ *     provider: "engine",
+ *     relayerUrl: "https://thirdweb.engine-***.thirdweb.com/relayer/***",
+ *     relayerForwarderAddress: "0x...",
+ *   }}
+ * >
+ *   ...
  * </TransactionButton>
  * ```
  * @component
@@ -73,7 +152,7 @@ export function TransactionButton(props: TransactionButtonProps) {
           !unstyled
             ? {
                 opacity: !account || disabled ? 0.5 : 1,
-                minWidth: "150px",
+                minWidth: "165px",
                 position: "relative",
                 ...buttonProps.style,
               }

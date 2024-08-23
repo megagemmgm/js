@@ -3,6 +3,7 @@ import { getCachedChain } from "../../../../../../../chains/utils.js";
 import type { ThirdwebClient } from "../../../../../../../client/client.js";
 import { NATIVE_TOKEN_ADDRESS } from "../../../../../../../constants/addresses.js";
 import type { BuyWithCryptoQuote } from "../../../../../../../pay/buyWithCrypto/getQuote.js";
+import type { BuyWithCryptoStatus } from "../../../../../../../pay/buyWithCrypto/getStatus.js";
 import type { TokenInfo } from "../../../../../../core/utils/defaultTokens.js";
 import { type ERC20OrNativeToken, NATIVE_TOKEN } from "../../nativeToken.js";
 import type { PayerInfo } from "../types.js";
@@ -14,13 +15,13 @@ type SwapFlowProps = {
   onBack?: () => void;
   buyWithCryptoQuote: BuyWithCryptoQuote;
   payer: PayerInfo;
-  onViewPendingTx: () => void;
   client: ThirdwebClient;
   isFiatFlow: boolean;
   onDone: () => void;
   onTryAgain: () => void;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
+  onSuccess: ((status: BuyWithCryptoStatus) => void) | undefined;
 };
 
 export function SwapFlow(props: SwapFlowProps) {
@@ -79,13 +80,13 @@ export function SwapFlow(props: SwapFlowProps) {
         title={props.title}
         onBack={props.onBack}
         onTryAgain={props.onTryAgain}
-        onViewPendingTx={props.onViewPendingTx}
         swapTxHash={swapTxHash}
         client={props.client}
         onDone={props.onDone}
-        isBuyForTx={props.isBuyForTx}
+        transactionMode={props.transactionMode}
         isEmbed={props.isEmbed}
         quote={quote}
+        onSuccess={props.onSuccess}
       />
     );
   }

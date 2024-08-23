@@ -10,8 +10,8 @@ import {
 import { SiDiscord } from "@react-icons/all-files/si/SiDiscord";
 import { SiGithub } from "@react-icons/all-files/si/SiGithub";
 import { SiTwitter } from "@react-icons/all-files/si/SiTwitter";
-import type { ProfileMetadata, ProfileMetadataInput } from "@thirdweb-dev/sdk";
 import { FileInput } from "components/shared/FileInput";
+import type { ProfileMetadata, ProfileMetadataInput } from "constants/schemas";
 import { useTrack } from "hooks/analytics/useTrack";
 import { useImageFileOrUrl } from "hooks/useImageFileOrUrl";
 import { useTxNotifications } from "hooks/useTxNotifications";
@@ -147,11 +147,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({
                 value={imageUrl}
                 showUploadButton
                 setValue={(file) => setValue("avatar", file)}
-                border="1px solid"
-                borderColor="gray.200"
-                borderRadius="md"
-                transition="all 200ms ease"
-                _hover={{ shadow: "sm" }}
+                className="border border-border rounded transition-all"
                 renderPreview={(fileUrl) => (
                   <MaskedAvatar w="100%" h="100%" src={fileUrl} />
                 )}

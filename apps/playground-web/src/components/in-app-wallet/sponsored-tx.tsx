@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { useEffect } from "react";
 import { claimTo, getNFT, getOwnedNFTs } from "thirdweb/extensions/erc1155";
 import {
@@ -22,7 +21,6 @@ export function SponsoredInAppTxPreview() {
       disconnect(wallet);
     }
   }, [wallet, disconnect]);
-  const { theme } = useTheme();
   const smartAccount = useActiveAccount();
   const { data: nft, isLoading: isNftLoading } = useReadContract(getNFT, {
     contract: editionDropContract,
@@ -45,7 +43,7 @@ export function SponsoredInAppTxPreview() {
             <MediaRenderer
               client={THIRDWEB_CLIENT}
               src={nft.metadata.image}
-              style={{ width: "100%", marginTop: "10px" }}
+              style={{ width: "400px", marginTop: "10px" }}
             />
           ) : null}
           {smartAccount ? (
@@ -77,7 +75,7 @@ export function SponsoredInAppTxPreview() {
             <p
               style={{
                 textAlign: "center",
-                width: "100%",
+                width: "400px",
                 marginTop: "10px",
               }}
             >

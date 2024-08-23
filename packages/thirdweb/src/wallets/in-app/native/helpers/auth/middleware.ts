@@ -3,7 +3,7 @@ import {
   AuthProvider,
   type AuthStoredTokenWithCookieReturnType,
   RecoveryShareManagement,
-} from "../../../core/authentication/type.js";
+} from "../../../core/authentication/types.js";
 import { ErrorMessages } from "../errors.js";
 import {
   getDeviceShare,
@@ -11,7 +11,10 @@ import {
   setWallerUserDetails,
 } from "../storage/local.js";
 import { setUpNewUserWallet } from "../wallet/creation.js";
-import { getCognitoRecoveryPasswordV2 } from "../wallet/recoveryCode.js";
+import {
+  getCognitoRecoveryPasswordV1,
+  getCognitoRecoveryPasswordV2,
+} from "../wallet/recoveryCode.js";
 import { setUpShareForNewDevice } from "../wallet/retrieval.js";
 
 export async function preAuth(args: {
@@ -61,7 +64,7 @@ export async function postAuth({
     try {
       // existing device share
       await getDeviceShare(client.clientId);
-    } catch (e) {
+    } catch {
       const _recoveryCode = await getRecoveryCode(
         storedToken,
         client,
@@ -113,7 +116,7 @@ export async function postAuthUserManaged(
     try {
       // existing device share
       await getDeviceShare(client.clientId);
-    } catch (e) {
+    } catch {
       // trying to recreate device share from recovery code to derive wallet
       try {
         await setUpShareForNewDevice({
@@ -149,12 +152,13 @@ async function getRecoveryCode(
         );
       }
       return recoveryCode;
-    } else {
-      try {
-        return await getCognitoRecoveryPasswordV2(client);
-      } catch (e) {
+    }
+    try {
+      return await getCognitoRecoveryPasswordV2(client);
+    } catch {
+      return await getCognitoRecoveryPasswordV1(client).catch(() => {
         throw new Error("Something went wrong getting cognito recovery code");
-      }
+      });
     }
   } else if (
     storedToken.authDetails.recoveryShareManagement ===

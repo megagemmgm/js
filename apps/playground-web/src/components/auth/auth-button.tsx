@@ -14,19 +14,11 @@ export function AuthButton() {
     <ConnectButton
       client={THIRDWEB_CLIENT}
       auth={{
-        isLoggedIn: async () => {
-          const authResult = await isLoggedIn();
-          if (!authResult) return false;
-          return true;
-        },
-        doLogin: async (params) => {
-          console.log("logging in!");
-          await login(params);
-        },
-        getLoginPayload: async ({ address }) => generatePayload({ address }),
-        doLogout: async () => {
-          await logout();
-        },
+        isLoggedIn: (address) => isLoggedIn(address),
+        doLogin: (params) => login(params),
+        getLoginPayload: ({ address }) =>
+          generatePayload({ address, chainId: 84532 }),
+        doLogout: () => logout(),
       }}
     />
   );

@@ -1,4 +1,9 @@
+import { Spinner } from "@/components/ui/Spinner/Spinner";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ChainIcon } from "components/icons/ChainIcon";
+import { OPSponsoredChains } from "constants/chains";
+import { useSupportedChainsRecord } from "hooks/chains/configureChains";
 import { useAddRecentlyUsedChainId } from "hooks/chains/recentlyUsedChains";
 import {
   useSetEditChain,
@@ -7,11 +12,6 @@ import {
 import { SettingsIcon } from "lucide-react";
 import { useMemo } from "react";
 import type { UseNetworkSwitcherModalOptions } from "thirdweb/react";
-import { Spinner } from "../../@/components/ui/Spinner/Spinner";
-import { Button } from "../../@/components/ui/button";
-import { cn } from "../../@/lib/utils";
-import { OPSponsoredChains } from "../../constants/chains";
-import { useSupportedChainsRecord } from "../../hooks/chains/configureChains";
 
 type ChainRenderProps = React.ComponentProps<
   NonNullable<UseNetworkSwitcherModalOptions["renderChain"]>
@@ -44,7 +44,7 @@ export const CustomChainRenderer = ({
   const isSponsored = OPSponsoredChains.includes(chain.id);
 
   return (
-    <div className="flex w-full justify-start hover:bg-[#22232b] rounded-lg px-2 py-1 cursor-pointer min-h-[48px]">
+    <div className="flex w-full justify-start hover:bg-accent rounded-lg px-2 py-1 cursor-pointer min-h-[48px]">
       <div className="flex flex-1 items-center group">
         {/* biome-ignore lint/a11y/useKeyWithClickEvents: FIXME */}
         <div
@@ -103,7 +103,7 @@ export const CustomChainRenderer = ({
         {!disableChainConfig && storedChain && (
           <Button
             variant="ghost"
-            className="ml-auto p-2 leading-4 opacity-0 group-hover:opacity-100 hover:bg-transparent transition-opacity"
+            className="ml-auto p-2 leading-4 md:opacity-0 group-hover:opacity-100 hover:bg-transparent transition-opacity"
             aria-label="Configure Network"
             onClick={() => {
               setEditChain(storedChain);

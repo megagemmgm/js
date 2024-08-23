@@ -1,7 +1,8 @@
-import { Flex, FormControl } from "@chakra-ui/react";
+import { FormControl } from "@chakra-ui/react";
 import { BasisPointsInput } from "components/inputs/BasisPointsInput";
 import { SolidityInput } from "contract-ui/components/solidity-inputs";
-import { FormErrorMessage, FormLabel, Heading, Text } from "tw-components";
+import { FormErrorMessage, FormHelperText, FormLabel } from "tw-components";
+import { Fieldset } from "./common";
 import type { CustomContractDeploymentForm } from "./custom-contract";
 
 interface PlatformFeeFieldsetProps {
@@ -12,17 +13,8 @@ export const PlatformFeeFieldset: React.FC<PlatformFeeFieldsetProps> = ({
   form,
 }) => {
   return (
-    <Flex pb={4} direction="column" gap={2}>
-      <Heading size="label.lg">Platform fees</Heading>
-
-      <Text size="body.md" fontStyle="italic">
-        For contract with primary sales, get additional fees for all primary
-        sales that happen on this contract. (This is useful if you are deploying
-        this contract for a 3rd party and want to take fees for your service).
-        If this contract is a marketplace, get a percentage of all the secondary
-        sales that happen on your contract.
-      </Text>
-      <Flex gap={4} direction={{ base: "column", md: "row" }}>
+    <Fieldset legend="Platform fees">
+      <div className="flex flex-col md:flex-row gap-4">
         <FormControl
           isRequired
           isInvalid={
@@ -46,6 +38,13 @@ export const PlatformFeeFieldset: React.FC<PlatformFeeFieldsetProps> = ({
               ).error?.message
             }
           </FormErrorMessage>
+          <FormHelperText className="!text-sm text-muted-foreground">
+            For contract with primary sales, get additional fees for all primary
+            sales that happen on this contract. (This is useful if you are
+            deploying this contract for a 3rd party and want to take fees for
+            your service). If this contract is a marketplace, get a percentage
+            of all the secondary sales that happen on your contract.
+          </FormHelperText>
         </FormControl>
         <FormControl
           isRequired
@@ -72,7 +71,7 @@ export const PlatformFeeFieldset: React.FC<PlatformFeeFieldsetProps> = ({
             }
           </FormErrorMessage>
         </FormControl>
-      </Flex>
-    </Flex>
+      </div>
+    </Fieldset>
   );
 };

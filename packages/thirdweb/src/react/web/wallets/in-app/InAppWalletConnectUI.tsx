@@ -14,6 +14,7 @@ import { OTPLoginUI } from "../shared/OTPLoginUI.js";
 import { PassKeyLogin } from "../shared/PassKeyLogin.js";
 import { SocialLogin } from "../shared/SocialLogin.js";
 import { InAppWalletFormUIScreen } from "./InAppWalletFormUI.js";
+import { WalletAuth } from "./WalletAuth.js";
 import { useInAppWalletLocale } from "./useInAppWalletLocale.js";
 
 /**
@@ -25,7 +26,7 @@ function InAppWalletConnectUI(props: {
   done: () => void;
   goBack?: () => void;
   size: "compact" | "wide";
-  meta: {
+  meta?: {
     title?: string;
     titleIconUrl?: string;
     showThirdwebBranding?: boolean;
@@ -35,6 +36,8 @@ function InAppWalletConnectUI(props: {
   client: ThirdwebClient;
   chain: Chain | undefined;
   connectLocale: ConnectLocale;
+  isLinking?: boolean;
+  walletConnect: { projectId?: string } | undefined;
 }) {
   const data = useSelectionData();
   const setSelectionData = useSetSelectionData();
@@ -56,6 +59,11 @@ function InAppWalletConnectUI(props: {
         }
       : props.goBack;
 
+  const done = () => {
+    props.done();
+    setSelectionData({});
+  };
+
   const otpUserInfo = state?.emailLogin
     ? { email: state.emailLogin }
     : state?.phoneLogin
@@ -67,12 +75,13 @@ function InAppWalletConnectUI(props: {
       <OTPLoginUI
         userInfo={otpUserInfo}
         locale={locale}
-        done={props.done}
+        done={done}
         goBack={goBackToMain}
         wallet={props.wallet}
         chain={props.chain}
         client={props.client}
         size={props.size}
+        isLinking={props.isLinking}
       />
     );
   }
@@ -80,12 +89,30 @@ function InAppWalletConnectUI(props: {
   if (state?.passkeyLogin) {
     return (
       <PassKeyLogin
+        locale={props.connectLocale}
         wallet={props.wallet}
-        done={props.done}
+        done={done}
         onBack={goBackToMain}
         chain={props.chain}
         client={props.client}
         size={props.size}
+        isLinking={props.isLinking}
+      />
+    );
+  }
+
+  if (state?.walletLogin) {
+    return (
+      <WalletAuth
+        meta={props.meta}
+        inAppLocale={locale}
+        walletConnect={props.walletConnect}
+        wallet={props.wallet}
+        client={props.client}
+        size={props.size}
+        done={done}
+        onBack={goBackToMain || (() => setSelectionData({}))}
+        locale={props.connectLocale}
       />
     );
   }
@@ -95,13 +122,15 @@ function InAppWalletConnectUI(props: {
       <SocialLogin
         socialAuth={state.socialLogin.type}
         locale={locale}
-        done={props.done}
+        done={done}
         goBack={goBackToMain}
         wallet={props.wallet}
         state={state}
         chain={props.chain}
         client={props.client}
         size={props.size}
+        connectLocale={props.connectLocale}
+        isLinking={props.isLinking}
       />
     );
   }
@@ -111,13 +140,14 @@ function InAppWalletConnectUI(props: {
       select={() => {}}
       connectLocale={props.connectLocale}
       inAppWalletLocale={locale}
-      done={props.done}
+      done={done}
       goBack={props.goBack}
       wallet={props.wallet}
       client={props.client}
       meta={props.meta}
       size={props.size}
       chain={props.chain}
+      isLinking={props.isLinking}
     />
   );
 }

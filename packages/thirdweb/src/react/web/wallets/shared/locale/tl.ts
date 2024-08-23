@@ -54,4 +54,6 @@ export default {
   phonePlaceholder: "Ilagay ang iyong numero ng telepono",
   signInWithPhone: "Mag-login gamit ang numero ng telepono",
   phoneRequired: "Kinakailangan ang numero ng telepono",
+  passkey: "Passkey",
+  linkWallet: "Link a Wallet",
 } satisfies InAppWalletLocale;

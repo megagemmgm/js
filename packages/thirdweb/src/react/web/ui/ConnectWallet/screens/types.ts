@@ -67,10 +67,12 @@ export type WalletDetailsModalScreen =
   | "buy"
   | "network-switcher"
   | "transactions"
-  | "view-funds"
+  | "view-assets"
   | "view-tokens"
   | "view-nfts"
   | "private-key"
   | "manage-wallet"
   | "wallet-connect-receiver"
-  | "wallet-manager";
+  | "wallet-manager"
+  | "link-profile"
+  | "linked-profiles";

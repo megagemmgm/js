@@ -1,12 +1,12 @@
-import { Alert, AlertIcon, FormControl, Input } from "@chakra-ui/react";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertIcon, FormControl } from "@chakra-ui/react";
 import type { UseFormReturn } from "react-hook-form";
 import { IoWarning } from "react-icons/io5";
 import { FormErrorMessage, FormLabel } from "tw-components";
 import type { NetworkConfigFormData } from "../ConfigureNetworkForm";
 
 export const RpcInput: React.FC<{
-  // biome-ignore lint/suspicious/noExplicitAny: FIXME
-  form: UseFormReturn<NetworkConfigFormData, any>;
+  form: UseFormReturn<NetworkConfigFormData>;
 }> = ({ form }) => {
   const reg = form.register("rpcUrl", {
     required: true,
@@ -15,7 +15,7 @@ export const RpcInput: React.FC<{
         try {
           new URL(value);
           return true;
-        } catch (e) {
+        } catch {
           return false;
         }
       },
@@ -29,15 +29,7 @@ export const RpcInput: React.FC<{
       isDisabled={form.watch("status") !== "active"}
     >
       <FormLabel>RPC URL</FormLabel>
-      <Input
-        autoComplete="off"
-        placeholder="https://"
-        type="url"
-        _placeholder={{
-          fontWeight: 500,
-        }}
-        {...reg}
-      />
+      <Input autoComplete="off" placeholder="https://" type="url" {...reg} />
 
       <FormErrorMessage fontSize="12px">Invalid RPC URL</FormErrorMessage>
 

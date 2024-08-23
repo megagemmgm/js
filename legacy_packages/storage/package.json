@@ -22,7 +22,7 @@
     "build": "tsc && preconstruct build",
     "test": "vitest run",
     "push": "yalc push",
-    "typedoc": "node scripts/typedoc.mjs"
+    "typedoc": "bun run scripts/typedoc.mjs"
   },
   "files": [
     "dist/"
@@ -35,7 +35,7 @@
     "@microsoft/api-extractor": "^7.47.0",
     "@microsoft/tsdoc": "^0.15.0",
     "@preconstruct/cli": "2.7.0",
-    "@swc-node/register": "^1.10.0",
+    "@swc-node/register": "^1.10.9",
     "@thirdweb-dev/tsconfig": "workspace:*",
     "@types/uuid": "^10.0.0",
     "eslint": "8.57.0",
@@ -44,7 +44,7 @@
     "esm": "^3.2.25",
     "rimraf": "5.0.7",
     "typedoc-gen": "workspace:*",
-    "typescript": "5.5.2"
+    "typescript": "5.5.4"
   },
   "dependencies": {
     "@thirdweb-dev/crypto": "workspace:*",

@@ -10,6 +10,10 @@ export {
   type BalanceOfParams,
 } from "../../extensions/erc20/__generated__/IERC20/read/balanceOf.js";
 export { decimals } from "../../extensions/erc20/read/decimals.js";
+export {
+  delegates,
+  type DelegatesParams,
+} from "../../extensions/erc20/__generated__/IVotes/read/delegates.js";
 export { totalSupply } from "../../extensions/erc20/__generated__/IERC20/read/totalSupply.js";
 export {
   allowance,
@@ -108,3 +112,12 @@ export {
   tokensMintedWithSignatureEvent,
   type TokensMintedWithSignatureEventFilters,
 } from "../../extensions/erc20/__generated__/ISignatureMintERC20/events/TokensMintedWithSignature.js";
+
+export {
+  getApprovalForTransaction,
+  type GetApprovalForTransactionParams,
+} from "../../extensions/erc20/write/getApprovalForTransaction.js";
+export {
+  delegate,
+  type DelegateParams,
+} from "../../extensions/erc20/__generated__/IVotes/write/delegate.js";

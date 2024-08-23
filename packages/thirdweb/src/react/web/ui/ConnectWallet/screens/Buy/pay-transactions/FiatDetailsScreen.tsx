@@ -17,7 +17,7 @@ export function FiatDetailsScreen(props: {
   onBack: () => void;
   client: ThirdwebClient;
   onDone: () => void;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
   payer: PayerInfo;
 }) {
@@ -48,8 +48,7 @@ export function FiatDetailsScreen(props: {
         client={props.client}
         status={status}
         onBack={props.onBack}
-        onViewPendingTx={props.onBack}
-        isBuyForTx={props.isBuyForTx}
+        transactionMode={props.transactionMode}
         isEmbed={props.isEmbed}
         quote={{
           fromCurrencyAmount: fiatQuote.fromCurrencyWithFees.amount,
@@ -74,6 +73,8 @@ export function FiatDetailsScreen(props: {
           setStopPolling(true);
         }}
         payer={props.payer}
+        // viewing history - ignore onSuccess
+        onSuccess={undefined}
       />
     );
   }

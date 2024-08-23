@@ -1,28 +1,19 @@
 import { Box, Flex } from "@chakra-ui/react";
-import { useContract } from "@thirdweb-dev/react";
-import { extensionDetectedState } from "components/buttons/ExtensionDetectButton";
+import type { ExtensionDetectedState } from "components/buttons/ExtensionDetectButton";
+import type { ThirdwebContract } from "thirdweb";
 import { Card, Heading, LinkButton, Text } from "tw-components";
 import { AccountSigners } from "./components/account-signers";
 
 interface AccountPermissionsPageProps {
-  contractAddress?: string;
+  contract: ThirdwebContract;
+  detectedPermissionFeature: ExtensionDetectedState;
 }
 
 export const AccountPermissionsPage: React.FC<AccountPermissionsPageProps> = ({
-  contractAddress,
+  contract,
+  detectedPermissionFeature,
 }) => {
-  const contractQuery = useContract(contractAddress);
-
-  const detectedFeature = extensionDetectedState({
-    contractQuery,
-    feature: ["AccountPermissions", "AccountPermissionsV1"],
-  });
-
-  if (contractQuery.isLoading) {
-    return null;
-  }
-
-  if (!detectedFeature) {
+  if (!detectedPermissionFeature) {
     return (
       <Card as={Flex} flexDir="column" gap={3}>
         {/* TODO  extract this out into it's own component and make it better */}
@@ -46,7 +37,7 @@ export const AccountPermissionsPage: React.FC<AccountPermissionsPageProps> = ({
       <Flex direction="row" justify="space-between" align="center">
         <Heading size="title.sm">Account Signers</Heading>
       </Flex>
-      <AccountSigners contractQuery={contractQuery} />
+      <AccountSigners contract={contract} />
     </Flex>
   );
 };

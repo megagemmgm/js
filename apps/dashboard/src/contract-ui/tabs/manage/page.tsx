@@ -1,21 +1,22 @@
 import { Spinner } from "@/components/ui/Spinner/Spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { thirdwebClient } from "@/constants/client";
 import { useEVMContractInfo } from "@3rdweb-sdk/react";
 import { UserXIcon } from "lucide-react";
 import { useMemo } from "react";
-import { defineChain, getContract } from "thirdweb";
-import { getInstalledExtensions, owner } from "thirdweb/extensions/modular";
+import { getContract } from "thirdweb";
+import { getInstalledModules, owner } from "thirdweb/extensions/modular";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
-import { thirdwebClient } from "../../../lib/thirdweb-client";
-import { InstallExtensionForm } from "./components/ExtensionForm";
-import { InstalledExtensionsTable } from "./components/InstalledExtensionsTable";
+import { useV5DashboardChain } from "../../../lib/v5-adapter";
+import { InstalledModulesTable } from "./components/InstalledModulesTable";
+import { InstallModuleForm } from "./components/ModuleForm";
 
-interface ContractEditExtensionsPageProps {
+interface ContractEditModulesPageProps {
   contractAddress?: string;
 }
 
-export const ContractEditExtensionsPage: React.FC<
-  ContractEditExtensionsPageProps
+export const ContractEditModulesPage: React.FC<
+  ContractEditModulesPageProps
 > = ({ contractAddress }) => {
   const contractInfo = useEVMContractInfo();
 
@@ -35,18 +36,19 @@ export const ContractEditExtensionsPage: React.FC<
 function Content(props: { contractAddress: string; chainId: number }) {
   const { contractAddress, chainId } = props;
   const account = useActiveAccount();
+  const chain = useV5DashboardChain(chainId);
 
   const contract = useMemo(
     () =>
       getContract({
         client: thirdwebClient,
         address: contractAddress,
-        chain: defineChain(chainId),
+        chain: chain,
       }),
-    [contractAddress, chainId],
+    [contractAddress, chain],
   );
 
-  const installedExtensionsQuery = useReadContract(getInstalledExtensions, {
+  const installedModulesQuery = useReadContract(getInstalledModules, {
     contract,
   });
 
@@ -54,8 +56,8 @@ function Content(props: { contractAddress: string; chainId: number }) {
     contract,
   });
 
-  function refetchExtensions() {
-    installedExtensionsQuery.refetch();
+  function refetchModules() {
+    installedModulesQuery.refetch();
   }
 
   if (ownerQuery.isLoading) {
@@ -76,10 +78,10 @@ function Content(props: { contractAddress: string; chainId: number }) {
 
   const isOwner = ownerQuery.data === account?.address;
 
-  const installedExtensions = {
-    isLoading: installedExtensionsQuery.isLoading,
-    data: installedExtensionsQuery.data
-      ? installedExtensionsQuery.data.map((x) => x.implementation)
+  const installedModules = {
+    isLoading: installedModulesQuery.isLoading,
+    data: installedModulesQuery.data
+      ? installedModulesQuery.data.map((x) => x.implementation)
       : [],
   };
 
@@ -90,18 +92,18 @@ function Content(props: { contractAddress: string; chainId: number }) {
         <div>
           <div>
             <h2 className="text-2xl tracking-tight font-bold mb-1">
-              Edit Extensions
+              Edit Modules
             </h2>
             <p className="text-secondary-foreground">
-              Add capabilities to your contract by installing extensions
+              Add capabilities to your contract by installing modules
             </p>
           </div>
           <div className="h-10" />
-          <InstallExtensionForm
+          <InstallModuleForm
             contract={contract}
-            refetchExtensions={refetchExtensions}
+            refetchModules={refetchModules}
             account={account}
-            installedExtensions={installedExtensions}
+            installedModules={installedModules}
           />
         </div>
       )}
@@ -112,10 +114,10 @@ function Content(props: { contractAddress: string; chainId: number }) {
             <UserXIcon className="size-6 text-red-400" />
             <div>
               <AlertTitle>
-                You do not have permissions to edit extensions{" "}
+                You do not have permissions to edit modules{" "}
               </AlertTitle>
               <AlertDescription>
-                Connect owner wallet to edit extensions
+                Connect owner wallet to edit modules
               </AlertDescription>
             </div>
           </div>
@@ -124,9 +126,9 @@ function Content(props: { contractAddress: string; chainId: number }) {
 
       <div className="h-10" />
 
-      <InstalledExtensionsTable
-        installedExtensions={installedExtensions}
-        refetchExtensions={refetchExtensions}
+      <InstalledModulesTable
+        installedModules={installedModules}
+        refetchModules={refetchModules}
         contract={contract}
         ownerAccount={isOwner ? account : undefined}
       />

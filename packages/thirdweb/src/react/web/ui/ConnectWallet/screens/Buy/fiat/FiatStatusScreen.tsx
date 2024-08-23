@@ -34,17 +34,17 @@ export function OnrampStatusScreen(props: {
   client: ThirdwebClient;
   onBack: () => void;
   intentId: string;
-  onViewPendingTx: () => void;
   hasTwoSteps: boolean;
   openedWindow: Window | null;
   quote: BuyWithFiatQuote;
   onDone: () => void;
   onShowSwapFlow: (status: BuyWithFiatStatus) => void;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
+  onSuccess: ((status: BuyWithFiatStatus) => void) | undefined;
 }) {
   const queryClient = useQueryClient();
-  const { openedWindow } = props;
+  const { openedWindow, onSuccess } = props;
   const statusQuery = useBuyWithFiatStatus({
     intentId: props.intentId,
     client: props.client,
@@ -62,6 +62,18 @@ export function OnrampStatusScreen(props: {
   } else if (statusQuery.data?.status === "ON_RAMP_TRANSFER_COMPLETED") {
     uiStatus = "completed";
   }
+
+  const purchaseCbCalled = useRef(false);
+  useEffect(() => {
+    if (purchaseCbCalled.current || !onSuccess) {
+      return;
+    }
+
+    if (statusQuery.data?.status === "ON_RAMP_TRANSFER_COMPLETED") {
+      purchaseCbCalled.current = true;
+      onSuccess(statusQuery.data);
+    }
+  }, [onSuccess, statusQuery.data]);
 
   // close the onramp popup if onramp is completed
   useEffect(() => {
@@ -117,7 +129,7 @@ export function OnrampStatusScreen(props: {
         onDone={props.onDone}
         fiatStatus={statusQuery.data}
         client={props.client}
-        isBuyForTx={props.isBuyForTx}
+        transactionMode={props.transactionMode}
         quote={props.quote}
         isEmbed={props.isEmbed}
       />
@@ -130,7 +142,7 @@ function OnrampStatusScreenUI(props: {
   fiatStatus?: BuyWithFiatStatus;
   onDone: () => void;
   client: ThirdwebClient;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
   quote: BuyWithFiatQuote;
 }) {
@@ -189,7 +201,7 @@ function OnrampStatusScreenUI(props: {
         <>
           <Spacer y="md" />
           <Container flex="row" center="x">
-            <Spinner size="3xl" color="accentText" />
+            <Spinner size="xxl" color="accentText" />
           </Container>
           <Spacer y="md" />
           <Text color="primaryText" size="lg" center>
@@ -240,7 +252,7 @@ function OnrampStatusScreenUI(props: {
 
           {!props.isEmbed && (
             <Button variant="accent" fullWidth onClick={props.onDone}>
-              {props.isBuyForTx ? "Continue Transaction" : "Done"}
+              {props.transactionMode ? "Continue Transaction" : "Done"}
             </Button>
           )}
         </>

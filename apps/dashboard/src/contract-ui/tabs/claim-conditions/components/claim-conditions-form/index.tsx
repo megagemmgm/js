@@ -15,17 +15,13 @@ import {
 } from "@chakra-ui/react";
 import {
   type DropContract,
-  type TokenContract,
   useClaimConditions,
   useSetClaimConditions,
-  useTokenDecimals,
 } from "@thirdweb-dev/react";
 import {
   type ClaimConditionInput,
   ClaimConditionInputSchema,
-  NATIVE_TOKEN_ADDRESS,
   type SnapshotEntry,
-  type ValidContractInstance,
 } from "@thirdweb-dev/sdk";
 import { TransactionButton } from "components/buttons/TransactionButton";
 import { TooltipBox } from "components/configure-networks/Form/TooltipBox";
@@ -33,10 +29,6 @@ import { detectFeatures } from "components/contract-components/utils";
 import { SnapshotUpload } from "contract-ui/tabs/claim-conditions/components/snapshot-upload";
 import { useTrack } from "hooks/analytics/useTrack";
 import { useTxNotifications } from "hooks/useTxNotifications";
-import {
-  hasLegacyClaimConditions,
-  hasMultiphaseClaimConditions,
-} from "lib/claimcondition-utils";
 import { Fragment, createContext, useContext, useMemo, useState } from "react";
 import {
   type UseFieldArrayReturn,
@@ -45,8 +37,13 @@ import {
   useForm,
 } from "react-hook-form";
 import { FiPlus } from "react-icons/fi";
-import { ZERO_ADDRESS } from "thirdweb";
-import { useActiveAccount } from "thirdweb/react";
+import {
+  NATIVE_TOKEN_ADDRESS,
+  type ThirdwebContract,
+  ZERO_ADDRESS,
+} from "thirdweb";
+import { decimals } from "thirdweb/extensions/erc20";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
 import invariant from "tiny-invariant";
 import { Button, Heading, MenuItem, Text } from "tw-components";
 import * as z from "zod";
@@ -185,31 +182,57 @@ interface ClaimConditionsFormProps {
   contract: DropContract;
   tokenId?: string;
   isColumn?: true;
+  contractV5: ThirdwebContract;
 }
 
 export const ClaimConditionsForm: React.FC<ClaimConditionsFormProps> = ({
   contract,
   tokenId,
   isColumn,
+  contractV5,
 }) => {
-  const { isMultiPhase, isClaimPhaseV1, isErc20 } = useMemo(() => {
-    return {
-      isMultiPhase: hasMultiphaseClaimConditions(contract),
-      isClaimPhaseV1: hasLegacyClaimConditions(contract),
-      isErc20: detectFeatures(contract, ["ERC20"]),
-    };
-  }, [contract]);
-
+  const isMultiPhase = useMemo(
+    () =>
+      detectFeatures(contract, [
+        // erc721
+        "ERC721ClaimPhasesV1",
+        "ERC721ClaimPhasesV2",
+        // erc1155
+        "ERC1155ClaimPhasesV1",
+        "ERC1155ClaimPhasesV2",
+        // erc 20
+        "ERC20ClaimPhasesV1",
+        "ERC20ClaimPhasesV2",
+      ]),
+    [contract],
+  );
+  const isClaimPhaseV1 = useMemo(
+    () =>
+      detectFeatures(contract, [
+        // erc721
+        "ERC721ClaimConditionsV1",
+        "ERC721ClaimPhasesV1",
+        // erc1155
+        "ERC1155ClaimConditionsV1",
+        "ERC1155ClaimPhasesV1",
+        // erc20
+        "ERC20ClaimConditionsV1",
+        "ERC20ClaimPhasesV1",
+      ]),
+    [contract],
+  );
+  const isErc20 = useMemo(
+    () => detectFeatures(contract, ["ERC20"]),
+    [contract],
+  );
   const walletAddress = useActiveAccount()?.address;
   const trackEvent = useTrack();
   const [resetFlag, setResetFlag] = useState(false);
-  const isAdmin = useIsAdmin(contract);
+  const isAdmin = useIsAdmin(contractV5);
   const [openSnapshotIndex, setOpenSnapshotIndex] = useState(-1);
   const setClaimConditionsQuery = useSetClaimConditions(contract, tokenId);
 
-  const tokenDecimals = useTokenDecimals(
-    isErc20 ? (contract as TokenContract) : undefined,
-  );
+  const tokenDecimals = useReadContract(decimals, { contract: contractV5 });
   const tokenDecimalsData = tokenDecimals.data ?? 0;
   const saveClaimPhaseNotification = useTxNotifications(
     "Saved claim phases",
@@ -512,7 +535,7 @@ export const ClaimConditionsForm: React.FC<ClaimConditionsFormProps> = ({
                   }}
                 >
                   <ClaimConditionsPhase
-                    contract={contract}
+                    contract={contractV5}
                     onRemove={() => {
                       removePhase(index);
                       if (!isMultiPhase) {
@@ -550,74 +573,79 @@ export const ClaimConditionsForm: React.FC<ClaimConditionsFormProps> = ({
             gap={2}
           >
             <Flex gap={2}>
-              <AdminOnly contract={contract as ValidContractInstance}>
-                {!isClaimPhaseV1 ? (
-                  <>
-                    <Menu>
-                      <MenuButton
-                        as={Button}
-                        size="sm"
-                        colorScheme="primary"
-                        variant={phases?.length > 0 ? "outline" : "solid"}
-                        borderRadius="md"
-                        leftIcon={<Icon as={FiPlus} />}
-                        isDisabled={
-                          setClaimConditionsQuery.isLoading ||
-                          (!isMultiPhase && phases?.length > 0)
-                        }
-                      >
-                        Add {isMultiPhase ? "Phase" : "Claim Conditions"}
-                      </MenuButton>
-                      <MenuList
-                        borderRadius="lg"
-                        overflow="hidden"
-                        zIndex="overlay"
-                      >
-                        {Object.keys(ClaimConditionTypeData).map((key) => {
-                          const type = key as ClaimConditionType;
-
-                          if (type === "custom") {
-                            return null;
+              {contractV5 && (
+                <AdminOnly contract={contractV5}>
+                  {!isClaimPhaseV1 ? (
+                    <>
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          size="sm"
+                          colorScheme="primary"
+                          variant={phases?.length > 0 ? "outline" : "solid"}
+                          borderRadius="md"
+                          leftIcon={<Icon as={FiPlus} />}
+                          isDisabled={
+                            setClaimConditionsQuery.isLoading ||
+                            (!isMultiPhase && phases?.length > 0)
                           }
+                        >
+                          Add {isMultiPhase ? "Phase" : "Claim Conditions"}
+                        </MenuButton>
+                        <MenuList
+                          borderRadius="lg"
+                          overflow="hidden"
+                          zIndex="overlay"
+                        >
+                          {Object.keys(ClaimConditionTypeData).map((key) => {
+                            const type = key as ClaimConditionType;
 
-                          return (
-                            <MenuItem
-                              key={type}
-                              onClick={() => {
-                                addPhase(type);
-                                // TODO: Automatically start editing the new phase after adding it
-                              }}
-                            >
-                              <Flex>
-                                {ClaimConditionTypeData[type].name}
-                                <TooltipBox
-                                  content={
-                                    <Text size="body.md">
-                                      {ClaimConditionTypeData[type].description}
-                                    </Text>
-                                  }
-                                />
-                              </Flex>
-                            </MenuItem>
-                          );
-                        })}
-                      </MenuList>
-                    </Menu>
-                  </>
-                ) : (
-                  <Button
-                    size="sm"
-                    colorScheme="primary"
-                    variant="solid"
-                    borderRadius="md"
-                    leftIcon={<Icon as={FiPlus} />}
-                    onClick={() => addPhase("custom")}
-                    isDisabled={setClaimConditionsQuery.isLoading}
-                  >
-                    Add {isMultiPhase ? "Phase" : "Claim Conditions"}
-                  </Button>
-                )}
-              </AdminOnly>
+                            if (type === "custom") {
+                              return null;
+                            }
+
+                            return (
+                              <MenuItem
+                                key={type}
+                                onClick={() => {
+                                  addPhase(type);
+                                  // TODO: Automatically start editing the new phase after adding it
+                                }}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {ClaimConditionTypeData[type].name}
+                                  <TooltipBox
+                                    content={
+                                      <Text size="body.md">
+                                        {
+                                          ClaimConditionTypeData[type]
+                                            .description
+                                        }
+                                      </Text>
+                                    }
+                                  />
+                                </div>
+                              </MenuItem>
+                            );
+                          })}
+                        </MenuList>
+                      </Menu>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      colorScheme="primary"
+                      variant="solid"
+                      borderRadius="md"
+                      leftIcon={<Icon as={FiPlus} />}
+                      onClick={() => addPhase("custom")}
+                      isDisabled={setClaimConditionsQuery.isLoading}
+                    >
+                      Add {isMultiPhase ? "Phase" : "Claim Conditions"}
+                    </Button>
+                  )}
+                </AdminOnly>
+              )}
               {controlledFields.some((field) => field.fromSdk) && (
                 <ResetClaimEligibility
                   isErc20={isErc20}
@@ -629,33 +657,32 @@ export const ClaimConditionsForm: React.FC<ClaimConditionsFormProps> = ({
             </Flex>
 
             <Flex>
-              <AdminOnly
-                contract={contract as ValidContractInstance}
-                fallback={<Box pb={5} />}
-              >
-                <Flex justifyContent="center" alignItems="center" gap={3}>
-                  {(hasRemovedPhases || hasAddedPhases) && (
-                    <Text color="red.500" fontWeight="bold">
-                      You have unsaved changes
-                    </Text>
-                  )}
-                  {controlledFields.length > 0 ||
-                  hasRemovedPhases ||
-                  !isMultiPhase ? (
-                    <TransactionButton
-                      colorScheme="primary"
-                      transactionCount={1}
-                      isDisabled={claimConditionsQuery.isLoading}
-                      type="submit"
-                      isLoading={setClaimConditionsQuery.isLoading}
-                      loadingText="Saving..."
-                      size="md"
-                    >
-                      Save Phases
-                    </TransactionButton>
-                  ) : null}
-                </Flex>
-              </AdminOnly>
+              {contractV5 && (
+                <AdminOnly contract={contractV5} fallback={<Box pb={5} />}>
+                  <Flex justifyContent="center" alignItems="center" gap={3}>
+                    {(hasRemovedPhases || hasAddedPhases) && (
+                      <Text color="red.500" fontWeight="bold">
+                        You have unsaved changes
+                      </Text>
+                    )}
+                    {controlledFields.length > 0 ||
+                    hasRemovedPhases ||
+                    !isMultiPhase ? (
+                      <TransactionButton
+                        colorScheme="primary"
+                        transactionCount={1}
+                        isDisabled={claimConditionsQuery.isLoading}
+                        type="submit"
+                        isLoading={setClaimConditionsQuery.isLoading}
+                        loadingText="Saving..."
+                        size="md"
+                      >
+                        Save Phases
+                      </TransactionButton>
+                    ) : null}
+                  </Flex>
+                </AdminOnly>
+              )}
             </Flex>
           </Flex>
         </Flex>

@@ -1,5 +1,6 @@
 import { useDashboardEVMChainId } from "@3rdweb-sdk/react";
 import { useQueryWithNetwork } from "@3rdweb-sdk/react/hooks/query/useQueryWithNetwork";
+import { useResolveContractAbi } from "@3rdweb-sdk/react/hooks/useResolveContractAbi";
 import {
   Divider,
   Flex,
@@ -13,19 +14,21 @@ import {
   Spinner,
   useDisclosure,
 } from "@chakra-ui/react";
-import { useContract } from "@thirdweb-dev/react";
-import type { Abi } from "@thirdweb-dev/sdk";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SourcesPanel } from "components/contract-components/shared/sources-panel";
 import { useContractSources } from "contract-ui/hooks/useContractSources";
 import { useMemo, useState } from "react";
 import { FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { toast } from "sonner";
+import type { ThirdwebContract } from "thirdweb";
 import { Badge, Button, Card, Heading } from "tw-components";
+import { useDashboardRouter } from "../../../@/lib/DashboardRouter";
 
 interface ContractSourcesPageProps {
-  contractAddress?: string;
+  contract: ThirdwebContract;
 }
 
-type VerifyContractParams = {
+type ContractParams = {
   contractAddress: string;
   chainId: number;
 };
@@ -40,7 +43,7 @@ interface VerificationResult {
 export async function verifyContract({
   contractAddress,
   chainId,
-}: VerifyContractParams) {
+}: ContractParams) {
   try {
     const response = await fetch(
       "https://contract.thirdweb.com/verify/contract",
@@ -173,21 +176,20 @@ const VerifyContractModal: React.FC<
 };
 
 export const ContractSourcesPage: React.FC<ContractSourcesPageProps> = ({
-  contractAddress,
+  contract,
 }) => {
   const [resetSignal, setResetSignal] = useState(0);
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   const handleClose = () => {
     onClose();
     // Increment to reset the query in the child component
     setResetSignal((prev: number) => prev + 1);
   };
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const contractSourcesQuery = useContractSources(contractAddress);
-
-  const { contract } = useContract(contractAddress);
-
-  const abi = useMemo(() => contract?.abi as Abi, [contract]);
+  const contractSourcesQuery = useContractSources(contract);
+  const abiQuery = useResolveContractAbi(contract);
 
   // clean up the source filenames and filter out libraries
   const sources = useMemo(() => {
@@ -205,10 +207,6 @@ export const ContractSourcesPage: React.FC<ContractSourcesPageProps> = ({
       .reverse();
   }, [contractSourcesQuery.data]);
 
-  if (!contractAddress) {
-    return <div>No contract address provided</div>;
-  }
-
   if (!contractSourcesQuery || contractSourcesQuery?.isLoading) {
     return (
       <Flex direction="row" align="center" gap={2}>
@@ -222,24 +220,83 @@ export const ContractSourcesPage: React.FC<ContractSourcesPageProps> = ({
     <>
       <VerifyContractModal
         isOpen={isOpen}
-        onClose={handleClose}
-        contractAddress={contractAddress}
+        onClose={() => handleClose()}
+        contractAddress={contract.address}
         resetSignal={resetSignal}
       />
+
       <Flex direction="column" gap={8}>
         <Flex direction="row" alignItems="center" gap={2}>
           <Heading size="title.sm" flex={1}>
             Sources
           </Heading>
-
+          <RefreshContractMetadataButton
+            chainId={contract.chain.id}
+            contractAddress={contract.address}
+          />
           <Button variant="solid" colorScheme="purple" onClick={onOpen}>
             Verify contract
           </Button>
         </Flex>
         <Card p={0}>
-          <SourcesPanel sources={sources} abi={abi} />
+          <SourcesPanel sources={sources} abi={abiQuery.data} />
         </Card>
       </Flex>
     </>
   );
 };
+
+function RefreshContractMetadataButton(props: {
+  chainId: number;
+  contractAddress: string;
+}) {
+  const router = useDashboardRouter();
+  const queryClient = useQueryClient();
+  const contractCacheMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `https://contract.thirdweb.com/metadata/${props.chainId}/${props.contractAddress}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (!response.ok) {
+        const errorMsg = await response.json();
+        console.error(`Failed to purge contract cache: ${response.statusText}`);
+
+        throw new Error(
+          errorMsg.message ||
+            errorMsg.error ||
+            "Failed to refresh contract data.",
+        );
+      }
+      // successful response
+      return true;
+    },
+    onSuccess: async () => {
+      // invalidate _all_ queries
+      await queryClient.invalidateQueries();
+      // refresh the page
+      setTimeout(() => {
+        router.refresh();
+      }, 1000);
+    },
+  });
+
+  return (
+    <Button
+      isLoading={contractCacheMutation.isLoading}
+      variant="outline"
+      onClick={() => {
+        toast.promise(contractCacheMutation.mutateAsync(), {
+          duration: 5000,
+          loading: "Refreshing contract data...",
+          success: () => "Contract data refreshed!",
+          error: (e) => e?.message || "Failed to refresh contract data.",
+        });
+      }}
+    >
+      Refresh Contract Data
+    </Button>
+  );
+}

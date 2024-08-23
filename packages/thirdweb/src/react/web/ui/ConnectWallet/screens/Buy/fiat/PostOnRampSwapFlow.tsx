@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ThirdwebClient } from "../../../../../../../client/client.js";
+import type { BuyWithCryptoStatus } from "../../../../../../../pay/buyWithCrypto/getStatus.js";
 import type { BuyWithFiatStatus } from "../../../../../../../pay/buyWithFiat/getStatus.js";
 import type { PayerInfo } from "../types.js";
 import { type BuyWithFiatPartialQuote, FiatSteps } from "./FiatSteps.js";
@@ -17,12 +18,12 @@ export function PostOnRampSwapFlow(props: {
   quote: BuyWithFiatPartialQuote;
   client: ThirdwebClient;
   onBack: () => void;
-  onViewPendingTx: () => void;
   onDone: () => void;
   onSwapFlowStarted: () => void;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
   payer: PayerInfo;
+  onSuccess: ((status: BuyWithCryptoStatus) => void) | undefined;
 }) {
   const [statusForSwap, setStatusForSwap] = useState<
     BuyWithFiatStatus | undefined
@@ -35,11 +36,11 @@ export function PostOnRampSwapFlow(props: {
         title={props.title}
         buyWithFiatStatus={statusForSwap}
         client={props.client}
-        onViewPendingTx={props.onViewPendingTx}
         onDone={props.onDone}
-        isBuyForTx={props.isBuyForTx}
+        transactionMode={props.transactionMode}
         isEmbed={props.isEmbed}
         payer={props.payer}
+        onSuccess={props.onSuccess}
       />
     );
   }

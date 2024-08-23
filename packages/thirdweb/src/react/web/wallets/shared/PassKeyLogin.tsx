@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import type { Chain } from "../../../../chains/types.js";
 import type { ThirdwebClient } from "../../../../client/client.js";
-import type { Wallet } from "../../../../exports/wallets.js";
+import { type Wallet, linkProfile } from "../../../../exports/wallets.js";
 import { webLocalStorage } from "../../../../utils/storage/webStorage.js";
 import { isEcosystemWallet } from "../../../../wallets/ecosystem/is-ecosystem-wallet.js";
 import { hasStoredPasskey } from "../../../../wallets/in-app/web/lib/auth/passkeys.js";
 import { iconSize } from "../../../core/design-system/index.js";
 import { setLastAuthProvider } from "../../../core/utils/storage.js";
-import { AccentFailIcon } from "../../ui/ConnectWallet/icons/AccentFailIcon.js";
 import { FingerPrintIcon } from "../../ui/ConnectWallet/icons/FingerPrintIcon.js";
+import type { ConnectLocale } from "../../ui/ConnectWallet/locale/types.js";
 import { Spacer } from "../../ui/components/Spacer.js";
-import { Spinner } from "../../ui/components/Spinner.js";
 import { Container, ModalHeader } from "../../ui/components/basic.js";
 import { Button } from "../../ui/components/buttons.js";
-import { Text } from "../../ui/components/text.js";
+import { ErrorState } from "./ErrorState.js";
 import { LoadingScreen } from "./LoadingScreen.js";
+import { LoadingState } from "./LoadingState.js";
 
 // is passkey stored?
 // - login
@@ -23,13 +23,15 @@ import { LoadingScreen } from "./LoadingScreen.js";
 
 export function PassKeyLogin(props: {
   wallet: Wallet;
+  locale: ConnectLocale;
   done: () => void;
   onBack?: () => void;
   client: ThirdwebClient;
   chain: Chain | undefined;
   size: "compact" | "wide";
+  isLinking?: boolean;
 }) {
-  const { wallet, done, client, chain, size } = props;
+  const { wallet, done, client, chain, size, locale } = props;
   const [screen, setScreen] = useState<
     "select" | "login" | "loading" | "signup"
   >("loading");
@@ -60,7 +62,14 @@ export function PassKeyLogin(props: {
   return (
     <Container animate="fadein" fullHeight flex="column">
       <Container p="lg">
-        <ModalHeader title="Passkey" onBack={props.onBack} />
+        <ModalHeader
+          title={
+            props.isLinking
+              ? locale.passkeys.linkPasskey
+              : locale.passkeys.title
+          }
+          onBack={props.onBack}
+        />
       </Container>
 
       <Container
@@ -97,6 +106,7 @@ export function PassKeyLogin(props: {
                 setScreen("signup");
               }}
               chain={chain}
+              isLinking={props.isLinking}
             />
           )}
 
@@ -106,6 +116,7 @@ export function PassKeyLogin(props: {
               client={client}
               done={done}
               chain={chain}
+              isLinking={props.isLinking}
             />
           )}
         </div>
@@ -120,20 +131,32 @@ function LoginScreen(props: {
   client: ThirdwebClient;
   onCreate: () => void;
   chain?: Chain;
+  isLinking?: boolean;
 }) {
   const { wallet, done, client, chain } = props;
   const [status, setStatus] = useState<"loading" | "error">("loading");
+  const [error, setError] = useState<string | undefined>();
 
   async function login() {
     setStatus("loading");
     try {
-      await wallet.connect({
-        client: client,
-        strategy: "passkey",
-        type: "sign-in",
-        chain,
-      });
-      await setLastAuthProvider("passkey", webLocalStorage);
+      if (props.isLinking) {
+        await linkProfile(wallet as Wallet<"inApp">, {
+          strategy: "passkey",
+          type: "sign-in",
+        }).catch((e) => {
+          setError(e.message);
+          throw e;
+        });
+      } else {
+        await wallet.connect({
+          client: client,
+          strategy: "passkey",
+          type: "sign-in",
+          chain,
+        });
+        await setLastAuthProvider("passkey", webLocalStorage);
+      }
       done();
     } catch {
       setStatus("error");
@@ -155,6 +178,7 @@ function LoginScreen(props: {
       <LoadingState
         title="Requesting Passkey"
         subtitle="A pop-up prompt will appear to sign-in and verify your passkey"
+        icon={<FingerPrintIcon size={iconSize.xxl} />}
       />
     );
   }
@@ -162,7 +186,7 @@ function LoginScreen(props: {
   if (status === "error") {
     return (
       <>
-        <ErrorState onTryAgain={login} title="Failed to Login" />
+        <ErrorState onTryAgain={login} title={error || "Failed to Login"} />
         <Spacer y="sm" />
         <Button variant="outline" fullWidth onClick={props.onCreate}>
           Create a new Passkey
@@ -180,22 +204,35 @@ function SignupScreen(props: {
   done: () => void;
   client: ThirdwebClient;
   chain?: Chain;
+  isLinking?: boolean;
 }) {
   const { wallet, done, client, chain } = props;
+  const [error, setError] = useState<string | undefined>();
   const [status, setStatus] = useState<"loading" | "error">("loading");
 
   async function signup() {
     setStatus("loading");
     try {
-      await wallet.connect({
-        client: client,
-        strategy: "passkey",
-        type: "sign-up",
-        chain,
-      });
-      await setLastAuthProvider("passkey", webLocalStorage);
+      if (props.isLinking) {
+        await linkProfile(wallet as Wallet<"inApp">, {
+          strategy: "passkey",
+          type: "sign-up",
+        });
+      } else {
+        await wallet.connect({
+          client: client,
+          strategy: "passkey",
+          type: "sign-up",
+          chain,
+        });
+        await setLastAuthProvider("passkey", webLocalStorage);
+      }
       done();
-    } catch {
+    } catch (e) {
+      console.error(e);
+      if (e instanceof Error) {
+        setError(`Error creating passkey: ${e.message}`);
+      }
       setStatus("error");
     }
   }
@@ -215,6 +252,7 @@ function SignupScreen(props: {
       <LoadingState
         title="Creating Passkey"
         subtitle="A pop-up prompt will appear to sign-in and verify your passkey"
+        icon={<FingerPrintIcon size={iconSize.xxl} />}
       />
     );
   }
@@ -222,7 +260,10 @@ function SignupScreen(props: {
   if (status === "error") {
     return (
       <>
-        <ErrorState onTryAgain={signup} title="Failed to create passkey" />
+        <ErrorState
+          onTryAgain={signup}
+          title={error || "Failed to create passkey"}
+        />
         <Spacer y="lg" />
       </>
     );
@@ -254,70 +295,6 @@ function SelectLoginMethod(props: {
       </Button>
 
       <Spacer y="lg" />
-    </Container>
-  );
-}
-
-function ErrorState(props: {
-  onTryAgain: () => void;
-  title: string;
-}) {
-  return (
-    <Container animate="fadein">
-      <Spacer y="xxl" />
-      <Container flex="row" center="x">
-        <AccentFailIcon size={iconSize["3xl"]} />
-      </Container>
-      <Spacer y="lg" />
-      <Text center color="primaryText" size="lg">
-        {props.title}
-      </Text>
-      <Spacer y="xl" />
-      <Spacer y="xxl" />
-      <Button variant="accent" fullWidth onClick={props.onTryAgain}>
-        Try Again
-      </Button>
-    </Container>
-  );
-}
-
-function LoadingState(props: {
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Container animate="fadein">
-      <Spacer y="xxl" />
-      <Container
-        flex="row"
-        center="x"
-        style={{
-          position: "relative",
-        }}
-      >
-        <Spinner size="4xl" color="accentText" />
-        <Container
-          color="accentText"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <FingerPrintIcon size={iconSize.xxl} />
-        </Container>
-      </Container>
-      <Spacer y="xl" />
-      <Text center color="primaryText" size="lg">
-        {props.title}
-      </Text>
-      <Spacer y="md" />
-      <Text multiline center>
-        {props.subtitle}
-      </Text>
-      <Spacer y="xxl" />
-      <Spacer y="xxl" />
     </Container>
   );
 }

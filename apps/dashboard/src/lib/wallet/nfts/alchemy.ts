@@ -1,5 +1,5 @@
-import type { NFTMetadata } from "@thirdweb-dev/sdk";
 import { StorageSingleton } from "lib/sdk";
+import type { NFTMetadata } from "thirdweb/utils";
 import { handleArbitraryTokenURI, shouldDownloadURI } from "./tokenUri";
 import {
   type AlchemySupportedChainId,
@@ -47,7 +47,7 @@ export async function transformAlchemyResponseToNFT(
             supply: alchemyNFT.balance || "1",
             type: alchemyNFT.id.tokenMetadata.tokenType,
           } as WalletNFT;
-        } catch (e) {
+        } catch {
           return undefined as unknown as WalletNFT;
         }
       }),

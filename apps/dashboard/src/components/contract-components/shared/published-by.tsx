@@ -58,6 +58,9 @@ export const PublishedBy: React.FC<PublishedByProps> = ({
       contractId={publishedContractToShow.name}
       publisher={publisherAddress}
       version={publishedContractToShow.version}
+      isBeta={(publishedContractToShow.displayName || "")
+        .toLowerCase()
+        .includes("beta")}
     />
   );
 };

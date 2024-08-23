@@ -9,9 +9,10 @@ import {
   type SiweAuthOptions,
   useSiweAuth,
 } from "../../../../core/hooks/auth/useSiweAuth.js";
-import { useActiveWallet } from "../../../hooks/wallets/useActiveWallet.js";
-import { useSetActiveWallet } from "../../../hooks/wallets/useSetActiveWallet.js";
-import { connectionManager } from "../../../index.js";
+import { useActiveAccount } from "../../../../core/hooks/wallets/useActiveAccount.js";
+import { useActiveWallet } from "../../../../core/hooks/wallets/useActiveWallet.js";
+import { useSetActiveWallet } from "../../../../core/hooks/wallets/useSetActiveWallet.js";
+import { useConnectionManager } from "../../../../core/providers/connection-manager.js";
 import { useSetSelectionData } from "../../../providers/wallet-ui-states-provider.js";
 import { LoadingScreen } from "../../../wallets/shared/LoadingScreen.js";
 import { WalletSelector } from "../WalletSelector.js";
@@ -54,7 +55,7 @@ export const ConnectModalContent = (props: {
   welcomeScreen: WelcomeScreen | undefined;
   connectLocale: ConnectLocale;
   client: ThirdwebClient;
-  isEmbed: boolean;
+  hideHeader: boolean;
   recommendedWallets: Wallet[] | undefined;
   chain: Chain | undefined;
   chains: Chain[] | undefined;
@@ -76,10 +77,11 @@ export const ConnectModalContent = (props: {
   const { screen, setScreen, initialScreen } = props.screenSetup;
   const setActiveWallet = useSetActiveWallet();
   const setSelectionData = useSetSelectionData();
-
   const activeWallet = useActiveWallet();
-  const siweAuth = useSiweAuth(activeWallet, props.auth);
+  const activeAccount = useActiveAccount();
+  const siweAuth = useSiweAuth(activeWallet, activeAccount, props.auth);
   const showSignatureScreen = siweAuth.requiresAuth && !siweAuth.isLoggedIn;
+  const connectionManager = useConnectionManager();
 
   const handleConnected = useCallback(
     (wallet: Wallet) => {
@@ -116,6 +118,7 @@ export const ConnectModalContent = (props: {
       setSelectionData,
       shouldSetActive,
       initialScreen,
+      connectionManager,
     ],
   );
 
@@ -146,7 +149,7 @@ export const ConnectModalContent = (props: {
       setModalVisibility={setModalVisibility}
       client={props.client}
       connectLocale={props.connectLocale}
-      isEmbed={props.isEmbed}
+      hideHeader={props.hideHeader}
       recommendedWallets={props.recommendedWallets}
       accountAbstraction={props.accountAbstraction}
       chain={props.chain}

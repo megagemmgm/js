@@ -4,22 +4,15 @@ import type { ThirdwebClient } from "../../../../client/client.js";
 import { webLocalStorage } from "../../../../utils/storage/webStorage.js";
 import { getWalletInfo } from "../../../../wallets/__generated__/getWalletInfo.js";
 import { getInstalledWalletProviders } from "../../../../wallets/injected/mipdStore.js";
-import { getStoredActiveWalletId } from "../../../../wallets/manager/index.js";
 import type { WalletId } from "../../../../wallets/wallet-types.js";
 import { radius } from "../../../core/design-system/index.js";
-import {
-  appleIconUri,
-  discordIconUri,
-  emailIcon,
-  facebookIconUri,
-  genericWalletIcon,
-  googleIconUri,
-  passkeyIcon,
-  phoneIcon,
-} from "../../../core/utils/socialIcons.js";
+import { useActiveWallet } from "../../../core/hooks/wallets/useActiveWallet.js";
 import { getLastAuthProvider } from "../../../core/utils/storage.js";
 import { useWalletImage } from "../../../core/utils/wallet.js";
-import { useActiveWallet } from "../../hooks/wallets/useActiveWallet.js";
+import {
+  genericWalletIcon,
+  getWalletIcon,
+} from "../../../core/utils/walletIcon.js";
 import { Img } from "./Img.js";
 
 /**
@@ -39,13 +32,7 @@ export function WalletImage(props: {
       // show auth provider icon for in-app wallets
       // show the admin EOA icon for smart
       const storage = webLocalStorage;
-      let activeEOAId = props.id;
-      if (props.id === "smart") {
-        const storedId = await getStoredActiveWalletId(storage);
-        if (storedId) {
-          activeEOAId = storedId;
-        }
-      }
+      const activeEOAId = props.id;
       let image: string | undefined;
 
       if (
@@ -55,29 +42,9 @@ export function WalletImage(props: {
       ) {
         // when showing an active wallet icon - check last auth provider and override the IAW icon
         const lastAuthProvider = await getLastAuthProvider(storage);
-        switch (lastAuthProvider) {
-          case "google":
-            image = googleIconUri;
-            break;
-          case "apple":
-            image = appleIconUri;
-            break;
-          case "facebook":
-            image = facebookIconUri;
-            break;
-          case "phone":
-            image = phoneIcon;
-            break;
-          case "email":
-            image = emailIcon;
-            break;
-          case "passkey":
-            image = passkeyIcon;
-            break;
-          case "discord":
-            image = discordIconUri;
-            break;
-        }
+        image = lastAuthProvider
+          ? getWalletIcon(lastAuthProvider)
+          : genericWalletIcon;
       } else {
         const mipdImage = getInstalledWalletProviders().find(
           (x) => x.info.rdns === activeEOAId,

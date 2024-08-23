@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-
-import { execSync } from "node:child_process";
 import { spawn } from "cross-spawn";
 import {
   generate,
@@ -19,32 +17,34 @@ async function main() {
       } else {
         await generate(chainIdPlusContract);
       }
+      break;
+    }
 
+    case "login": {
+      // Not implemented yet
+      console.info(
+        "Please instead pass a secret key to the command directly, learn more: https://support.thirdweb.com/troubleshooting-errors/7Y1BqKNvtLdBv5fZkRZZB3/issue-linking-device-on-the-authorization-page-via-thirdweb-cli/cn9LRA3ax7XCP6uxwRYdvx",
+      );
+      process.exit(1);
       break;
     }
 
     default: {
-      const isWindows = /^win/.test(process.platform);
+      // check several commands for missing -k flag
+      const commands = ["deploy", "publish", "generate", "upload"];
+      if (commands.includes(command) && !rest.includes("-k")) {
+        console.info(
+          "Please include the -k flag with your secret key, learn more: https://support.thirdweb.com/troubleshooting-errors/7Y1BqKNvtLdBv5fZkRZZB3/issue-linking-device-on-the-authorization-page-via-thirdweb-cli/cn9LRA3ax7XCP6uxwRYdvx",
+        );
+        process.exit(1);
+        return;
+      }
 
-      const isBunAvailable = (() => {
-        try {
-          const res = execSync("bun --version", {
-            // stdio: "ignore",
-            encoding: "utf-8",
-          });
-          if (typeof res === "string" && res.indexOf(".") > -1) {
-            return true;
-          }
-        } catch {}
-        return false;
-      })();
+      const isWindows = /^win/.test(process.platform);
 
       let runner = "npx";
 
       switch (true) {
-        case isBunAvailable:
-          runner = "bunx";
-          break;
         case isWindows:
           runner = "npx.cmd";
           break;

@@ -5,59 +5,56 @@ import {
   type useContract,
   useDelayedRevealLazyMint,
   useLazyMint,
-  useTotalCount,
 } from "@thirdweb-dev/react";
-import type { UploadProgressEvent } from "@thirdweb-dev/sdk";
-import { extensionDetectedState } from "components/buttons/ExtensionDetectButton";
-import { detectFeatures } from "components/contract-components/utils";
 import { BatchLazyMint } from "core-ui/batch-upload/batch-lazy-mint";
-import { ProgressBox } from "core-ui/batch-upload/progress-box";
-import { BigNumber } from "ethers";
+import {
+  ProgressBox,
+  type UploadProgressEvent,
+} from "core-ui/batch-upload/progress-box";
 import { useTrack } from "hooks/analytics/useTrack";
 import { useTxNotifications } from "hooks/useTxNotifications";
 import { useState } from "react";
 import { RiCheckboxMultipleBlankLine } from "react-icons/ri";
+import type { ThirdwebContract } from "thirdweb";
+import { nextTokenIdToMint } from "thirdweb/extensions/erc721";
+import { useReadContract } from "thirdweb/react";
 import { Button, Drawer } from "tw-components";
 
 interface BatchLazyMintButtonProps {
   contractQuery: ReturnType<typeof useContract>;
+  isRevealable: boolean;
+  contract: ThirdwebContract;
 }
 
 export const BatchLazyMintButton: React.FC<BatchLazyMintButtonProps> = ({
   contractQuery,
+  contract,
+  isRevealable,
   ...restButtonProps
 }) => {
+  const contractV4 = contractQuery.contract;
   const trackEvent = useTrack();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const nextTokenIdToMint = useTotalCount(contractQuery.contract);
+
+  // Both ERC721 and ERC1155 have the same function signature for nextTokenIdToMint,
+  // so we can just use either one.
+  const nextTokenIdToMintQuery = useReadContract(nextTokenIdToMint, {
+    contract,
+  });
   const [progress, setProgress] = useState<UploadProgressEvent>({
     progress: 0,
     total: 100,
   });
 
-  const detectedState = extensionDetectedState({
-    contractQuery,
-    feature: [
-      "ERC721LazyMintable",
-      "ERC1155LazyMintableV1",
-      "ERC1155LazyMintableV2",
-    ],
-  });
-
-  const isRevealable = detectFeatures(contractQuery.contract, [
-    "ERC721Revealable",
-    "ERC1155Revealable",
-  ]);
-
   const mintBatchMutation = useLazyMint(
-    contractQuery.contract,
+    contractV4,
     (event: UploadProgressEvent) => {
       setProgress(event);
     },
   );
 
   const mintDelayedRevealBatchMutation = useDelayedRevealLazyMint(
-    contractQuery.contract as RevealableContract,
+    contractV4 as RevealableContract,
     (event: UploadProgressEvent) => {
       setProgress(event);
     },
@@ -66,15 +63,13 @@ export const BatchLazyMintButton: React.FC<BatchLazyMintButtonProps> = ({
   const txNotifications = useTxNotifications(
     "Batch uploaded successfully",
     "Error uploading batch",
-    contractQuery.contract,
+    contract,
   );
-
-  if (detectedState !== "enabled") {
+  if (!contract) {
     return null;
   }
-
   return (
-    <MinterOnly contract={contractQuery?.contract}>
+    <MinterOnly contract={contract}>
       <Drawer
         allowPinchZoom
         preserveScrollBarGap
@@ -98,7 +93,11 @@ export const BatchLazyMintButton: React.FC<BatchLazyMintButtonProps> = ({
                 await mintBatchMutation.mutateAsync(data);
               } else {
                 // otherwise it's delayed reveal
-                await mintDelayedRevealBatchMutation.mutateAsync(data);
+                await mintDelayedRevealBatchMutation.mutateAsync({
+                  metadatas: data.metadata,
+                  placeholder: data.placeholderMetadata,
+                  password: data.password,
+                });
               }
 
               trackEvent({
@@ -123,9 +122,7 @@ export const BatchLazyMintButton: React.FC<BatchLazyMintButtonProps> = ({
               });
             }
           }}
-          nextTokenIdToMint={BigNumber.from(
-            nextTokenIdToMint.data || 0,
-          ).toNumber()}
+          nextTokenIdToMint={nextTokenIdToMintQuery.data || 0n}
           isRevealable={isRevealable}
         >
           {mintBatchMutation.isLoading ? (

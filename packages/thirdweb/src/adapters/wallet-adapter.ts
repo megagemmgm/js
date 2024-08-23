@@ -1,4 +1,5 @@
 import type { Chain } from "../chains/types.js";
+import { getCachedChainIfExists } from "../chains/utils.js";
 import type { ThirdwebClient } from "../client/client.js";
 import type { Account, Wallet } from "../wallets/interfaces/wallet.js";
 import { createWalletEmitter } from "../wallets/wallet-emitter.js";
@@ -12,7 +13,18 @@ export type AdapterWalletOptions = {
 };
 
 /**
- * Creates a wallet from the given adapted account. Use this to convert a third party library wallet into a thirdweb wallet.
+ * Creates a wallet from the given account.
+ *
+ * You can use this to:
+ *
+ * - convert a third party library wallet (wagmi, viem, ethers) into a thirdweb wallet.
+ * - connect with a private key (for automated tests)
+ *
+ * Available wallet adatpers:
+ * - [Viem](https://portal.thirdweb.com/references/typescript/v5/viemAdapter)
+ * - [Ethers 6](https://portal.thirdweb.com/references/typescript/v5/ethers6Adapter)
+ * - [Ethers 5](https://portal.thirdweb.com/references/typescript/v5/ethers5Adapter)
+ *
  * @param options - The options for the adapter wallet.
  * @returns a wallet instance.
  *
@@ -58,6 +70,8 @@ export function createWalletAdapter(
       return options.adaptedAccount;
     },
     getChain() {
+      const cachedChain = getCachedChainIfExists(_chain.id);
+      _chain = cachedChain || _chain;
       return _chain;
     },
     getConfig() {

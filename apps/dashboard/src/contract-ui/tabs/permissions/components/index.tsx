@@ -3,6 +3,7 @@ import {
   type ContractWithRoles,
   type RolesForContract,
   useAllRoleMembers,
+  useContract,
   useContractType,
   useSetAllRoleMembers,
 } from "@thirdweb-dev/react";
@@ -12,6 +13,7 @@ import { useTrack } from "hooks/analytics/useTrack";
 import { useTxNotifications } from "hooks/useTxNotifications";
 import { useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import type { ThirdwebContract } from "thirdweb";
 import type { roleMap } from "thirdweb/extensions/permissions";
 import { Button } from "tw-components";
 import { ContractPermission } from "./contract-permission";
@@ -23,11 +25,12 @@ type PermissionFormContext<TContract extends ContractWithRoles> = {
 export const Permissions = <TContract extends ContractWithRoles>({
   contract,
 }: {
-  contract: TContract;
+  contract: ThirdwebContract;
 }) => {
   const trackEvent = useTrack();
-  const allRoleMembers = useAllRoleMembers(contract);
-  const setAllRoleMembers = useSetAllRoleMembers(contract);
+  const { contract: contractV4 } = useContract(contract.address);
+  const allRoleMembers = useAllRoleMembers(contractV4);
+  const setAllRoleMembers = useSetAllRoleMembers(contractV4 as TContract);
 
   const transformedQueryData = useMemo(() => {
     if (!allRoleMembers.data) {
@@ -41,7 +44,7 @@ export const Permissions = <TContract extends ContractWithRoles>({
     values: transformedQueryData,
   });
 
-  const { data: contractType } = useContractType(contract.getAddress());
+  const { data: contractType } = useContractType(contract.address);
   const contractData =
     BuiltinContractMap[contractType as keyof typeof BuiltinContractMap];
 

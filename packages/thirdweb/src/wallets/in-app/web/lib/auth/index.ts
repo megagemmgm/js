@@ -6,7 +6,7 @@ import {
   type GetAuthenticatedUserParams,
   type PreAuthArgsType,
   UserWalletStatus,
-} from "../../../core/authentication/type.js";
+} from "../../../core/authentication/types.js";
 import { getOrCreateInAppWalletConnector } from "../../../core/wallet/in-app-core.js";
 import type { Ecosystem } from "../../types.js";
 
@@ -106,6 +106,7 @@ export async function getUserPhoneNumber(options: GetAuthenticatedUserParams) {
 
 /**
  * Pre-authenticates the user based on the provided authentication strategy.
+ * Use this function to send a verification code to the user's email or phone number.
  * @param args - The arguments required for pre-authentication.
  * @returns A promise that resolves to the pre-authentication result.
  * @throws An error if the provided authentication strategy doesn't require pre-authentication.
@@ -155,7 +156,12 @@ export async function authenticate(
   >,
 ) {
   const connector = await getInAppWalletConnector(args.client, args.ecosystem);
-  if (args.redirect && connector.authenticateWithRedirect)
-    return connector.authenticateWithRedirect(args.strategy);
-  return connector.authenticate(args);
+  const isRedirect = args.redirect || args.mode !== "popup";
+  if (isRedirect && connector.authenticateWithRedirect && args.strategy)
+    return connector.authenticateWithRedirect(
+      args.strategy as SocialAuthOption,
+      args.mode,
+      args.redirectUrl,
+    );
+  return connector.connect(args);
 }

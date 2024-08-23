@@ -2,8 +2,8 @@ import {
   type SendTransactionConfig,
   useSendTransactionCore,
 } from "../../../core/hooks/transaction/useSendTransaction.js";
-import { useActiveWallet } from "../wallets/useActiveWallet.js";
-import { useSwitchActiveWalletChain } from "../wallets/useSwitchActiveWalletChain.js";
+import { useActiveWallet } from "../../../core/hooks/wallets/useActiveWallet.js";
+import { useSwitchActiveWalletChain } from "../../../core/hooks/wallets/useSwitchActiveWalletChain.js";
 
 /**
  * A hook to send a transaction.
@@ -19,6 +19,17 @@ import { useSwitchActiveWalletChain } from "../wallets/useSwitchActiveWalletChai
  * sendTx(tx);
  * ```
  *
+ * ### Gasless usage with [thirdweb Engine](https://portal.thirdweb.com/engine)
+ * ```tsx
+ * import { useSendTransaction } from "thirdweb/react";
+ * const mutation = useSendTransaction({
+ *   gasless: {
+ *     provider: "engine",
+ *     relayerUrl: "https://thirdweb.engine-***.thirdweb.com/relayer/***",
+ *     relayerForwarderAddress: "0x...",
+ *   }
+ * });
+ * ```
  * @transaction
  */
 export function useSendTransaction(config: SendTransactionConfig = {}) {

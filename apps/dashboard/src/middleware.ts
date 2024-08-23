@@ -1,8 +1,9 @@
-import { LOGGED_IN_ONLY_PATHS } from "@/constants/auth";
+import { isLoginRequired } from "@/constants/auth";
 import { COOKIE_ACTIVE_ACCOUNT, COOKIE_PREFIX_TOKEN } from "@/constants/cookie";
 import { type NextRequest, NextResponse } from "next/server";
 import { getAddress } from "thirdweb";
-import { defineChain, getChainMetadata } from "thirdweb/chains";
+import { getChainMetadata } from "thirdweb/chains";
+import { defineDashboardChain } from "./lib/defineDashboardChain";
 
 // ignore assets, api - only intercept page routes
 export const config = {
@@ -27,7 +28,7 @@ export async function middleware(request: NextRequest) {
     : null;
 
   // logged in paths
-  if (LOGGED_IN_ONLY_PATHS.some((path) => pathname.startsWith(path))) {
+  if (isLoginRequired(pathname)) {
     // check if the user is logged in (has a valid auth cookie)
 
     if (!authCookie) {
@@ -51,8 +52,14 @@ export async function middleware(request: NextRequest) {
 
   // if the first section of the path is a number, check if it's a valid chain_id and re-write it to the slug
   const possibleChainId = Number(paths[0]);
-  if (Number.isInteger(possibleChainId) && possibleChainId !== 404) {
-    const possibleChain = defineChain(possibleChainId);
+
+  if (
+    possibleChainId &&
+    Number.isInteger(possibleChainId) &&
+    possibleChainId !== 404
+  ) {
+    // eslint-disable-next-line no-restricted-syntax
+    const possibleChain = defineDashboardChain(possibleChainId, undefined);
     try {
       const chainMetadata = await getChainMetadata(possibleChain);
       if (chainMetadata.slug) {

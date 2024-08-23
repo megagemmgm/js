@@ -9,8 +9,14 @@ export {
   getUserPhoneNumber,
 } from "../../wallets/in-app/web/lib/auth/index.js";
 
-export { type GetAuthenticatedUserParams } from "../../wallets/in-app/core/authentication/type.js";
+export { type GetAuthenticatedUserParams } from "../../wallets/in-app/core/authentication/types.js";
+export type {
+  InAppWalletCreationOptions,
+  InAppWalletAuth,
+  InAppWalletSocialAuth,
+  InAppWalletConnectionOptions,
+} from "../../wallets/in-app/core/wallet/types.js";
 
 export { hasStoredPasskey } from "../../wallets/in-app/web/lib/auth/passkeys.js";
 
-export { socialIcons } from "../../react/core/utils/socialIcons.js";
+export { socialIcons } from "../../react/core/utils/walletIcon.js";

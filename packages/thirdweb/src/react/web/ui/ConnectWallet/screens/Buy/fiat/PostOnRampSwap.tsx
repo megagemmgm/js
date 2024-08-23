@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { ThirdwebClient } from "../../../../../../../client/client.js";
 import type { BuyWithCryptoQuote } from "../../../../../../../pay/buyWithCrypto/getQuote.js";
+import type { BuyWithCryptoStatus } from "../../../../../../../pay/buyWithCrypto/getStatus.js";
 import { getPostOnRampQuote } from "../../../../../../../pay/buyWithFiat/getPostOnRampQuote.js";
 import type { BuyWithFiatStatus } from "../../../../../../../pay/buyWithFiat/getStatus.js";
 import { iconSize } from "../../../../../../core/design-system/index.js";
@@ -19,11 +20,11 @@ export function PostOnRampSwap(props: {
   client: ThirdwebClient;
   buyWithFiatStatus: BuyWithFiatStatus;
   onBack?: () => void;
-  onViewPendingTx: () => void;
   onDone: () => void;
-  isBuyForTx: boolean;
+  transactionMode: boolean;
   isEmbed: boolean;
   payer: PayerInfo;
+  onSuccess: ((status: BuyWithCryptoStatus) => void) | undefined;
 }) {
   const [lockedOnRampQuote, setLockedOnRampQuote] = useState<
     BuyWithCryptoQuote | undefined
@@ -123,15 +124,15 @@ export function PostOnRampSwap(props: {
       buyWithCryptoQuote={lockedOnRampQuote}
       client={props.client}
       onBack={props.onBack}
-      onViewPendingTx={props.onViewPendingTx}
       isFiatFlow={true}
       onDone={props.onDone}
       onTryAgain={() => {
         setLockedOnRampQuote(undefined);
         postOnRampQuoteQuery.refetch();
       }}
-      isBuyForTx={props.isBuyForTx}
+      transactionMode={props.transactionMode}
       isEmbed={props.isEmbed}
+      onSuccess={props.onSuccess}
     />
   );
 }

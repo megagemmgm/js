@@ -1,9 +1,8 @@
-import { useCancelEnglishAuction } from "@thirdweb-dev/react";
-import type { MarketplaceV3 } from "@thirdweb-dev/sdk";
 import { CancelTab } from "contract-ui/tabs/shared-components/cancel-tab";
+import type { ThirdwebContract } from "thirdweb";
 
 interface CancelEnglishAuctionProps {
-  contract: MarketplaceV3;
+  contract: ThirdwebContract;
   auctionId: string;
 }
 
@@ -11,7 +10,5 @@ export const CancelEnglishAuction: React.FC<CancelEnglishAuctionProps> = ({
   contract,
   auctionId,
 }) => {
-  const cancelEnglishAuction = useCancelEnglishAuction(contract);
-
-  return <CancelTab cancelQuery={cancelEnglishAuction} id={auctionId} />;
+  return <CancelTab contract={contract} id={auctionId} />;
 };

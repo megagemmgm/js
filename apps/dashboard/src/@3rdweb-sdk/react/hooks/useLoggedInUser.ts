@@ -1,12 +1,13 @@
-import { LOGGED_IN_ONLY_PATHS } from "@/constants/auth";
+import { isLoginRequired } from "@/constants/auth";
+import { useDashboardRouter } from "@/lib/DashboardRouter";
 import { useQuery } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import type { EnsureLoginResponse } from "app/api/auth/ensure-login/route";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import {
   useActiveAccount,
   useActiveWalletConnectionStatus,
 } from "thirdweb/react";
-import type { EnsureLoginResponse } from "../../../app/api/auth/ensure-login/route";
 
 // define "TW_AUTH_TOKEN" to exist on the window object
 declare global {
@@ -20,7 +21,7 @@ export function useLoggedInUser(): {
   isLoggedIn: boolean;
   user: { address: string; jwt?: string } | null;
 } {
-  const router = useRouter();
+  const router = useDashboardRouter();
   const pathname = usePathname();
   const connectedAddress = useActiveAccount()?.address;
   const connectionStatus = useActiveWalletConnectionStatus();
@@ -35,12 +36,12 @@ export function useLoggedInUser(): {
     // enabled if:
     // - there is a pathname
     // - we are not already currently connecting
-    // - the pathname is one of the LOGGED_IN_ONLY_PATHS
+    // - the pathname requires login
     enabled:
       !!pathname &&
       connectionStatus !== "connecting" &&
       statusWasEverConnecting.current &&
-      LOGGED_IN_ONLY_PATHS.some((path) => pathname.startsWith(path)),
+      isLoginRequired(pathname),
     // the last "persist", part of the queryKey, is to make sure that we do not cache this query in indexDB
     // convention in v4 of the SDK that we are (ab)using here
     queryKey: ["logged_in_user", connectedAddress, { persist: false }],
@@ -113,7 +114,7 @@ export function useLoggedInUser(): {
   }
 
   // if we are not on a logged in path, we can simply return the connected address
-  if (!LOGGED_IN_ONLY_PATHS.some((path) => pathname.startsWith(path))) {
+  if (!isLoginRequired(pathname)) {
     return {
       isLoading: false,
       isLoggedIn: true,

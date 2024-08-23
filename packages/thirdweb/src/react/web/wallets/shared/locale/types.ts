@@ -49,4 +49,6 @@ export type InAppWalletLocale = {
   };
   submitEmail: string;
   maxAccountsExceeded: string;
+  passkey: string;
+  linkWallet: string;
 };

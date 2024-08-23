@@ -1,21 +1,24 @@
 import { AdminOnly } from "@3rdweb-sdk/react/components/roles/admin-only";
 import { Flex, FormControl } from "@chakra-ui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  usePrimarySaleRecipient,
-  useUpdatePrimarySaleRecipient,
-} from "@thirdweb-dev/react";
-import {
-  CommonPrimarySaleSchema,
-  type ValidContractInstance,
-} from "@thirdweb-dev/sdk";
 import type { ExtensionDetectedState } from "components/buttons/ExtensionDetectButton";
 import { TransactionButton } from "components/buttons/TransactionButton";
+import { AddressOrEnsSchema } from "constants/schemas";
 import { SolidityInput } from "contract-ui/components/solidity-inputs";
 import { useTrack } from "hooks/analytics/useTrack";
 import { useTxNotifications } from "hooks/useTxNotifications";
 import { useForm } from "react-hook-form";
-import { useActiveAccount } from "thirdweb/react";
+import { toast } from "sonner";
+import { type ThirdwebContract, ZERO_ADDRESS } from "thirdweb";
+import {
+  primarySaleRecipient,
+  setPrimarySaleRecipient,
+} from "thirdweb/extensions/common";
+import {
+  useActiveAccount,
+  useReadContract,
+  useSendAndConfirmTransaction,
+} from "thirdweb/react";
 import {
   Card,
   FormErrorMessage,
@@ -23,22 +26,26 @@ import {
   Heading,
   Text,
 } from "tw-components";
-import type { z } from "zod";
+import { z } from "zod";
 import { SettingDetectedState } from "./detected-state";
 
-export const SettingsPrimarySale = <
-  TContract extends ValidContractInstance | undefined,
->({
+const CommonPrimarySaleSchema = z.object({
+  primary_sale_recipient: AddressOrEnsSchema.default(ZERO_ADDRESS),
+});
+
+export const SettingsPrimarySale = ({
   contract,
   detectedState,
 }: {
-  contract: TContract;
+  contract: ThirdwebContract;
   detectedState: ExtensionDetectedState;
 }) => {
   const address = useActiveAccount()?.address;
   const trackEvent = useTrack();
-  const query = usePrimarySaleRecipient(contract);
-  const mutation = useUpdatePrimarySaleRecipient(contract);
+  const query = useReadContract(primarySaleRecipient, {
+    contract,
+  });
+  const mutation = useSendAndConfirmTransaction();
 
   const transformedQueryData = {
     primary_sale_recipient: query.data,
@@ -67,15 +74,25 @@ export const SettingsPrimarySale = <
             action: "set-primary-sale",
             label: "attempt",
           });
+          const saleRecipient = d.primary_sale_recipient;
+          if (!saleRecipient) {
+            return toast.error(
+              "Please enter a valid primary sale recipient address",
+            );
+          }
+          const transaction = setPrimarySaleRecipient({
+            contract,
+            saleRecipient,
+          });
           // if we switch back to mutateAsync then *need* to catch errors
-          mutation.mutate(d.primary_sale_recipient as string, {
-            onSuccess: (_data, variables) => {
+          mutation.mutate(transaction, {
+            onSuccess: () => {
               trackEvent({
                 category: "settings",
                 action: "set-primary-sale",
                 label: "success",
               });
-              form.reset({ primary_sale_recipient: variables });
+              form.reset({ primary_sale_recipient: saleRecipient });
               onSuccess();
             },
             onError: (error) => {
@@ -94,12 +111,12 @@ export const SettingsPrimarySale = <
         <Flex p={{ base: 6, md: 10 }} as="section" direction="column" gap={4}>
           <Heading size="title.sm">Primary Sales</Heading>
           <Text size="body.md" fontStyle="italic">
-            Determine the address that should receive the revenue from initial
+            The wallet address that should receive the revenue from initial
             sales of the assets.
           </Text>
           <Flex gap={4} direction={{ base: "column", md: "row" }}>
             <FormControl
-              isDisabled={mutation.isLoading || !address}
+              isDisabled={mutation.isPending || !address}
               isInvalid={
                 !!form.getFieldState("primary_sale_recipient", form.formState)
                   .error
@@ -107,7 +124,7 @@ export const SettingsPrimarySale = <
             >
               <FormLabel>Recipient Address</FormLabel>
               <SolidityInput
-                isDisabled={mutation.isLoading || !address}
+                isDisabled={mutation.isPending || !address}
                 solidityType="address"
                 formContext={form}
                 variant="filled"
@@ -122,13 +139,13 @@ export const SettingsPrimarySale = <
             </FormControl>
           </Flex>
         </Flex>
-        <AdminOnly contract={contract as ValidContractInstance}>
+        <AdminOnly contract={contract}>
           <TransactionButton
             colorScheme="primary"
             transactionCount={1}
             isDisabled={query.isLoading || !form.formState.isDirty}
             type="submit"
-            isLoading={mutation.isLoading}
+            isLoading={mutation.isPending}
             loadingText="Saving..."
             size="md"
             borderRadius="xl"

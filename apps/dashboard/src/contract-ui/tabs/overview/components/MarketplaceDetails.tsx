@@ -7,13 +7,10 @@ import {
   SkeletonText,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { useContract } from "@thirdweb-dev/react";
-import type { MarketplaceV3 } from "@thirdweb-dev/sdk";
 import { ListingStatsV3 } from "contract-ui/tabs/listings/components/listing-stats";
 import { useTabHref } from "contract-ui/utils";
-import { BigNumber } from "ethers";
 import { useMemo } from "react";
-import { getContract } from "thirdweb";
+import type { ThirdwebContract } from "thirdweb";
 import {
   type DirectListing,
   type EnglishAuction,
@@ -23,18 +20,10 @@ import {
   totalListings,
 } from "thirdweb/extensions/marketplace";
 import { useReadContract } from "thirdweb/react";
-import {
-  Badge,
-  Card,
-  Heading,
-  Text,
-  TrackedLink,
-  type TrackedLinkProps,
-} from "tw-components";
+import { min } from "thirdweb/utils";
+import { Badge, Card, Heading, Text, TrackedLink } from "tw-components";
 import { AddressCopyButton } from "tw-components/AddressCopyButton";
 import { NFTMediaWithEmptyState } from "tw-components/nft-media";
-import { thirdwebClient } from "../../../../lib/thirdweb-client";
-import { defineDashboardChain } from "../../../../lib/v5-adapter";
 
 type ListingData =
   | (Pick<
@@ -53,33 +42,19 @@ type ListingData =
     });
 
 type MarketplaceDetailsProps = {
-  contractAddress: string;
-  contractType: "marketplace" | "marketplace-v3";
+  contract: ThirdwebContract;
   features: string[];
-  trackingCategory: TrackedLinkProps["category"];
+  trackingCategory: string;
 };
 
-interface MarketplaceDetailsVersionProps<T> {
-  contract: T;
-  trackingCategory: TrackedLinkProps["category"];
-  features: MarketplaceDetailsProps["features"];
-}
-
 export const MarketplaceDetails: React.FC<MarketplaceDetailsProps> = ({
-  contractAddress,
-  contractType,
+  contract,
   trackingCategory,
   features,
 }) => {
-  const { contract } = useContract(contractAddress, contractType);
-
-  if (contractType === "marketplace" && contract) {
-    // no longer supported
-    return null;
-  }
   return (
     <MarketplaceV3Details
-      contract={contract as MarketplaceV3}
+      contract={contract}
       trackingCategory={trackingCategory}
       features={features}
     />
@@ -87,25 +62,25 @@ export const MarketplaceDetails: React.FC<MarketplaceDetailsProps> = ({
 };
 
 type ListingCardsSectionProps = {
-  contract: MarketplaceV3;
-  trackingCategory: TrackedLinkProps["category"];
+  contract: ThirdwebContract;
+  trackingCategory: string;
 };
 
 const DirectListingCards: React.FC<ListingCardsSectionProps> = ({
   trackingCategory,
-  contract: v4Contract,
+  contract,
 }) => {
-  const contract = getContract({
-    client: thirdwebClient,
-    address: v4Contract.getAddress(),
-    chain: defineDashboardChain(v4Contract.chainId),
-  });
   const directListingsHref = useTabHref("direct-listings");
   const countQuery = useReadContract(totalListings, { contract });
   const listingsQuery = useReadContract(getAllListings, {
     contract,
     count: 3n,
-    start: Math.max(BigNumber.from(countQuery?.data || 3)?.toNumber() - 3, 0),
+    start: Math.max(
+      Number(
+        min((countQuery?.data || 3n) - 3n, BigInt(Number.MAX_SAFE_INTEGER)),
+      ),
+      0,
+    ),
   });
   const listings = useMemo(
     () =>
@@ -120,7 +95,7 @@ const DirectListingCards: React.FC<ListingCardsSectionProps> = ({
     [listingsQuery?.data],
   );
 
-  if (!countQuery.isLoading && BigNumber.from(countQuery.data || 0).eq(0)) {
+  if (!countQuery.isLoading && (countQuery.data || 0n) === 0n) {
     return null;
   }
   if (!listingsQuery.isLoading && listings.length === 0) {
@@ -155,20 +130,19 @@ const DirectListingCards: React.FC<ListingCardsSectionProps> = ({
 
 const EnglishAuctionCards: React.FC<ListingCardsSectionProps> = ({
   trackingCategory,
-  contract: v4Contract,
+  contract,
 }) => {
-  const contract = getContract({
-    client: thirdwebClient,
-    address: v4Contract.getAddress(),
-    chain: defineDashboardChain(v4Contract.chainId),
-  });
-
   const englishAuctionsHref = useTabHref("english-auctions");
   const countQuery = useReadContract(totalAuctions, { contract });
   const auctionsQuery = useReadContract(getAllAuctions, {
     contract,
     count: 3n,
-    start: Math.max(BigNumber.from(countQuery?.data || 3)?.toNumber() - 3, 0),
+    start: Math.max(
+      Number(
+        min((countQuery?.data || 3n) - 3n, BigInt(Number.MAX_SAFE_INTEGER)),
+      ),
+      0,
+    ),
   });
   const auctions = useMemo(
     () =>
@@ -183,7 +157,7 @@ const EnglishAuctionCards: React.FC<ListingCardsSectionProps> = ({
     [auctionsQuery?.data],
   );
 
-  if (!countQuery.isLoading && BigNumber.from(countQuery.data || 0).eq(0)) {
+  if (!countQuery.isLoading && (countQuery.data || 0n) === 0n) {
     return null;
   }
   if (!auctionsQuery.isLoading && auctions.length === 0) {
@@ -216,16 +190,28 @@ const EnglishAuctionCards: React.FC<ListingCardsSectionProps> = ({
   );
 };
 
-const MarketplaceV3Details: React.FC<
-  MarketplaceDetailsVersionProps<MarketplaceV3>
-> = ({ contract, trackingCategory, features }) => {
+interface MarketplaceDetailsVersionProps {
+  contract: ThirdwebContract;
+  trackingCategory: string;
+  features: MarketplaceDetailsProps["features"];
+}
+
+const MarketplaceV3Details: React.FC<MarketplaceDetailsVersionProps> = ({
+  contract,
+  trackingCategory,
+  features,
+}) => {
   const hasDirectListings = features.includes("DirectListings");
   const hasEnglishAuctions = features.includes("EnglishAuctions");
 
   return (
     <Flex gap={6} flexDirection="column">
       <Heading size="title.sm">Listings</Heading>
-      <ListingStatsV3 contract={contract} features={features} />
+      <ListingStatsV3
+        contract={contract}
+        hasDirectListings={hasDirectListings}
+        hasEnglishAuctions={hasEnglishAuctions}
+      />
       {hasDirectListings && contract && (
         <DirectListingCards
           contract={contract}
@@ -273,7 +259,7 @@ const dummyMetadata: (idx: number) => ListingData = (idx) => ({
 interface ListingCardsProps {
   listings: ListingData[];
   isLoading: boolean;
-  trackingCategory: TrackedLinkProps["category"];
+  trackingCategory: string;
   isMarketplaceV1?: boolean;
 }
 const ListingCards: React.FC<ListingCardsProps> = ({

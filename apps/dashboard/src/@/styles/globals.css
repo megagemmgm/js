@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  [data-theme="light"] {
     /* bg - neutral  */
     --background: 0 0% 100%;
     --secondary: 0 0% 97%;
@@ -44,7 +45,8 @@
     --radius: 0.5rem;
   }
 
-  .dark {
+  .dark,
+  [data-theme="dark"] {
     /* bg - neutral  */
     --background: 0 0% 4.5%;
     --secondary: 0 0% 6.5%;
@@ -55,7 +57,7 @@
     --inverted: var(--foreground);
 
     /* bg - colorful */
-    --primary: 215.88 100% 55%;
+    --primary: 221 83% 54%;
     --destructive: 0 62.8% 15%;
     --success: 156.2 71.6% 10%;
     --warning: 40.61deg 96.12% 8%;
@@ -88,6 +90,28 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* shadcn charts */
+@layer base {
+  :root {
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    /* below is ai generated based on the initial */
+    --chart-6: 200 65% 50%;
+    --chart-7: 120 70% 45%;
+    --chart-8: 45 75% 55%;
+    --chart-9: 260 60% 60%;
+    --chart-10: 0 70% 50%;
+    --chart-11: 180 60% 50%;
+    --chart-12: 100 65% 55%;
+    --chart-13: 360 70% 55%;
+    --chart-14: 240 65% 50%;
+    --chart-15: 80 60% 50%;
   }
 }
 

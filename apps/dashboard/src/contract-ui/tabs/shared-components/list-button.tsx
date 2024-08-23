@@ -1,40 +1,32 @@
 import { ListerOnly } from "@3rdweb-sdk/react/components/roles/lister-only";
 import { Icon, useDisclosure } from "@chakra-ui/react";
-import {
-  type UseContractResult,
-  useCreateAuctionListing,
-  useCreateDirectListing,
-} from "@thirdweb-dev/react";
-import type { Marketplace, MarketplaceV3 } from "@thirdweb-dev/sdk";
 import { TransactionButton } from "components/buttons/TransactionButton";
 import { FiPlus } from "react-icons/fi";
-import { useActiveAccount } from "thirdweb/react";
+import type { ThirdwebContract } from "thirdweb";
+import { useActiveAccount, useSendAndConfirmTransaction } from "thirdweb/react";
 import { Button, Drawer } from "tw-components";
 import { CreateListingsForm } from "../listings/components/list-form";
 
 const LIST_FORM_ID = "marketplace-list-form";
 
 interface CreateListingButtonProps {
-  contractQuery:
-    | UseContractResult<Marketplace>
-    | UseContractResult<MarketplaceV3>;
+  contract: ThirdwebContract;
   createText?: string;
   type?: "direct-listings" | "english-auctions";
 }
 
 export const CreateListingButton: React.FC<CreateListingButtonProps> = ({
-  contractQuery,
   createText = "Create",
   type,
+  contract,
   ...restButtonProps
 }) => {
   const address = useActiveAccount()?.address;
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const directList = useCreateDirectListing(contractQuery.contract);
-  const auctionList = useCreateAuctionListing(contractQuery.contract);
+  const { mutate, isPending } = useSendAndConfirmTransaction();
 
   return (
-    <ListerOnly contract={contractQuery?.contract}>
+    <ListerOnly contract={contract}>
       <Drawer
         allowPinchZoom
         preserveScrollBarGap
@@ -46,7 +38,7 @@ export const CreateListingButton: React.FC<CreateListingButtonProps> = ({
           children: (
             <>
               <Button
-                isDisabled={directList.isLoading || auctionList.isLoading}
+                isDisabled={isPending}
                 variant="outline"
                 mr={3}
                 onClick={onClose}
@@ -54,7 +46,7 @@ export const CreateListingButton: React.FC<CreateListingButtonProps> = ({
                 Cancel
               </Button>
               <TransactionButton
-                isLoading={directList.isLoading || auctionList.isLoading}
+                isLoading={isPending}
                 transactionCount={2}
                 form={LIST_FORM_ID}
                 type="submit"
@@ -67,11 +59,10 @@ export const CreateListingButton: React.FC<CreateListingButtonProps> = ({
         }}
       >
         <CreateListingsForm
-          contractQuery={contractQuery}
-          directList={directList}
-          auctionList={auctionList}
+          contract={contract}
           formId={LIST_FORM_ID}
           type={type}
+          mutate={mutate}
         />
       </Drawer>
       <Button

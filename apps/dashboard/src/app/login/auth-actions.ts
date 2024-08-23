@@ -1,6 +1,7 @@
 "use server";
 import "server-only";
 
+import { COOKIE_ACTIVE_ACCOUNT, COOKIE_PREFIX_TOKEN } from "@/constants/cookie";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAddress } from "thirdweb";
@@ -9,10 +10,6 @@ import type {
   LoginPayload,
   VerifyLoginPayloadParams,
 } from "thirdweb/auth";
-import {
-  COOKIE_ACTIVE_ACCOUNT,
-  COOKIE_PREFIX_TOKEN,
-} from "../../@/constants/cookie";
 
 const THIRDWEB_API_HOST =
   process.env.NEXT_PUBLIC_THIRDWEB_API_HOST || "https://api.thirdweb.com";
@@ -131,11 +128,23 @@ export async function doLogin(
   });
 
   // redirect to the nextPath (if set)
-  if (nextPath) {
+  if (nextPath && isValidRedirectPath(nextPath)) {
     return redirect(nextPath);
   }
   // if we do not have a next path, redirect to dashboard home
   return redirect("/dashboard");
+}
+function isValidRedirectPath(encodedPath: string): boolean {
+  try {
+    // Decode the URI component
+    const decodedPath = decodeURIComponent(encodedPath);
+    // ensure the path always starts with a _single_ slash
+    // dobule slash could be interpreted as `//example.com` which is not allowed
+    return decodedPath.startsWith("/") && !decodedPath.startsWith("//");
+  } catch {
+    // If decoding fails, return false
+    return false;
+  }
 }
 
 export async function doLogout() {
@@ -188,7 +197,7 @@ export async function isLoggedIn(address: string) {
     return false;
   }
   // if the address matches what we expect, we're logged in
-  if (getAddress(json.address) === getAddress(address)) {
+  if (getAddress(json.data.creatorWalletAddress) === getAddress(address)) {
     // set the active account cookie again
     cookieStore.set(COOKIE_ACTIVE_ACCOUNT, getAddress(address), {
       httpOnly: false,
