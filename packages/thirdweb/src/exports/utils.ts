@@ -146,6 +146,7 @@ export { encodePacked } from "viem";
 // Useful helpers
 export { setThirdwebDomains } from "../utils/domains.js";
 export { resolvePromisedValue } from "../utils/promise/resolve-promised-value.js";
+export { allOf, oneOf } from "../utils/promise/conditionals.js";
 
 // ------------------------------------------------
 // json

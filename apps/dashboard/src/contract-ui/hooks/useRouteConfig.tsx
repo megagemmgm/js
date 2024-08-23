@@ -1,7 +1,6 @@
 import {
   contractType,
   getAllDetectedFeatureNames,
-  getErcs,
   useContract,
 } from "@thirdweb-dev/react";
 import { extensionDetectedState } from "components/buttons/ExtensionDetectButton";
@@ -12,6 +11,10 @@ import type { EnhancedRoute } from "contract-ui/types/types";
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import type { ThirdwebContract } from "thirdweb";
+import { isERC20 } from "thirdweb/extensions/erc20";
+import { isERC721 } from "thirdweb/extensions/erc721";
+import { isERC1155 } from "thirdweb/extensions/erc1155";
+import { useReadContract } from "thirdweb/react";
 import { useAnalyticsSupportedForChain } from "../../data/analytics/hooks";
 
 const LazyContractExplorerPage = dynamic(() =>
@@ -78,11 +81,6 @@ const LazyContractPermissionsPage = dynamic(() =>
     ({ ContractPermissionsPage }) => ContractPermissionsPage,
   ),
 );
-const LazyContractEmbedPage = dynamic(() =>
-  import("../tabs/embed/page").then(
-    ({ ContractEmbedPage }) => ContractEmbedPage,
-  ),
-);
 const LazyContractCodePage = dynamic(() =>
   import("../tabs/code/page").then(({ ContractCodePage }) => ContractCodePage),
 );
@@ -104,7 +102,7 @@ const LazyContractEditModulesPage = dynamic(() =>
 
 export function useContractRouteConfig(
   contractAddress: string,
-  contract?: ThirdwebContract,
+  contract: ThirdwebContract,
 ): EnhancedRoute[] {
   const ensQuery = useEns(contractAddress);
   const contractQuery = useContract(ensQuery.data?.address);
@@ -113,6 +111,11 @@ export function useContractRouteConfig(
   const analyticsSupported = useAnalyticsSupportedForChain(
     contractQuery.contract?.chainId,
   );
+
+  // ContractTokensPage
+  const isERC20Query = useReadContract(isERC20, { contract });
+  const isERC721Query = useReadContract(isERC721, { contract });
+  const isERC1155Query = useReadContract(isERC1155, { contract });
 
   const contractData = useMemo(() => {
     const claimconditionExtensionDetection = extensionDetectedState({
@@ -132,77 +135,10 @@ export function useContractRouteConfig(
       ],
     });
 
-    // ContractSettingsPage
-    const detectedMetadata = extensionDetectedState({
-      contractQuery,
-      feature: "ContractMetadata",
-    });
-    const detectedPrimarySale = extensionDetectedState({
-      contractQuery,
-      feature: "PrimarySale",
-    });
-    const detectedRoyalties = extensionDetectedState({
-      contractQuery,
-      feature: "Royalty",
-    });
-    const detectedPlatformFees = extensionDetectedState({
-      contractQuery,
-      feature: "PlatformFee",
-    });
-
-    // ContractTokensPage
-    const isERC20 = detectFeatures(contractQuery.contract, ["ERC20"]);
-
-    const isERC20Mintable = detectFeatures(contractQuery.contract, [
-      "ERC20Mintable",
-    ]);
-
-    const isERC20Claimable = detectFeatures(contractQuery.contract, [
-      "ERC20ClaimConditionsV1",
-      "ERC20ClaimConditionsV2",
-      "ERC20ClaimPhasesV1",
-      "ERC20ClaimPhasesV2",
-    ]);
-
     // AccountPage
     const detectedAccountFeature = extensionDetectedState({
       contractQuery,
       feature: ["Account"],
-    });
-
-    // ContractEmbedPage
-    const { erc20, erc1155, erc721 } = getErcs(contractQuery?.contract);
-    const isMarketplaceV3 = detectFeatures(contractQuery?.contract, [
-      "DirectListings",
-      "EnglishAuctions",
-    ]);
-
-    const embedDetectedState = extensionDetectedState({
-      contractQuery,
-      matchStrategy: "any",
-      feature: [
-        // erc 721
-        "ERC721ClaimPhasesV1",
-        "ERC721ClaimPhasesV2",
-        "ERC721ClaimConditionsV1",
-        "ERC721ClaimConditionsV2",
-
-        // erc 1155
-        "ERC1155ClaimPhasesV1",
-        "ERC1155ClaimPhasesV2",
-        "ERC1155ClaimConditionsV1",
-        "ERC1155ClaimConditionsV2",
-
-        // erc 20
-        "ERC20ClaimConditionsV1",
-        "ERC20ClaimConditionsV2",
-        "ERC20ClaimPhasesV1",
-        "ERC20ClaimPhasesV2",
-
-        // marketplace v3
-        "DirectListings",
-        "EnglishAuctions",
-      ],
     });
 
     // AccountPermissionsPage
@@ -233,16 +169,6 @@ export function useContractRouteConfig(
       feature: "DirectListings",
     });
 
-    const detectedNftExtensions = extensionDetectedState({
-      contractQuery,
-      feature: ["ERC1155", "ERC721"],
-    });
-
-    const detectedErc20Extension = extensionDetectedState({
-      contractQuery,
-      feature: "ERC20",
-    });
-
     const detectedModularExtension = extensionDetectedState({
       contractQuery,
       feature: ["ModularCore"],
@@ -271,45 +197,18 @@ export function useContractRouteConfig(
 
     return {
       claimconditionExtensionDetection,
-      detectedMetadata,
-      detectedPrimarySale,
-      detectedRoyalties,
-      detectedPlatformFees,
-      isERC20,
-      isERC20Mintable,
-      isERC20Claimable,
       detectedAccountFeature,
-      erc20,
-      erc1155,
-      erc721,
-      isMarketplaceV3,
       detectedPermissionFeature,
-      embedDetectedState,
       detectedAccountFactory,
       detectedPermissionFeatures,
       detectedEnglishAuctions,
       detectedDirectListings,
-      detectedNftExtensions,
-      detectedErc20Extension,
       detectedModularExtension,
       hasNewClaimConditions,
       detectedPermissionEnumerable,
       detectedFeatureNames,
     };
   }, [contractQuery]);
-
-  const ercOrMarketplace =
-    contractTypeQuery.data === "marketplace"
-      ? "marketplace"
-      : contractData.isMarketplaceV3
-        ? "marketplace-v3"
-        : contractData.erc20
-          ? "erc20"
-          : contractData.erc1155
-            ? "erc1155"
-            : contractData.erc721
-              ? "erc721"
-              : null;
 
   return [
     {
@@ -383,7 +282,12 @@ export function useContractRouteConfig(
     {
       title: "NFTs",
       path: "nfts",
-      isEnabled: contractData.detectedNftExtensions,
+      isEnabled:
+        isERC721Query.data || isERC1155Query.data
+          ? "enabled"
+          : isERC721Query.isLoading || isERC1155Query.isLoading
+            ? "loading"
+            : "disabled",
       component: () => (
         <>{contract && <LazyContractNFTPage contract={contract} />}</>
       ),
@@ -391,15 +295,17 @@ export function useContractRouteConfig(
     {
       title: "Tokens",
       path: "tokens",
-      isEnabled: contractData.detectedErc20Extension,
+      isEnabled: isERC20Query.isLoading
+        ? "loading"
+        : isERC20Query.data
+          ? "enabled"
+          : "disabled",
       component: () => (
         <>
           {contract && (
             <LazyContractTokensPage
               contract={contract}
-              isERC20={contractData.isERC20}
-              isERC20Claimable={contractData.isERC20Claimable}
-              isERC20Mintable={contractData.isERC20Mintable}
+              isERC20={isERC20Query.data || false}
             />
           )}
         </>
@@ -459,7 +365,7 @@ export function useContractRouteConfig(
               claimconditionExtensionDetection={
                 contractData.claimconditionExtensionDetection
               }
-              isERC20={contractData.isERC20}
+              isERC20={isERC20Query.data || false}
               hasNewClaimConditions={contractData.hasNewClaimConditions}
             />
           )}
@@ -529,39 +435,10 @@ export function useContractRouteConfig(
       ),
     },
     {
-      title: "Embed",
-      path: "embed",
-      component: () => (
-        <>
-          {contract && (
-            <LazyContractEmbedPage
-              contract={contract}
-              ercOrMarketplace={ercOrMarketplace}
-            />
-          )}
-        </>
-      ),
-      isEnabled: contractTypeQuery.isLoading
-        ? "loading"
-        : contractTypeQuery.data === "marketplace"
-          ? "enabled"
-          : contractData.embedDetectedState,
-    },
-    {
       title: "Settings",
       path: "settings",
       component: () => (
-        <>
-          {contract && (
-            <LazyContractSettingsPage
-              contract={contract}
-              detectedMetadata={contractData.detectedMetadata}
-              detectedPlatformFees={contractData.detectedPlatformFees}
-              detectedPrimarySale={contractData.detectedPrimarySale}
-              detectedRoyalties={contractData.detectedRoyalties}
-            />
-          )}
-        </>
+        <>{contract && <LazyContractSettingsPage contract={contract} />}</>
       ),
       isDefault: true,
     },

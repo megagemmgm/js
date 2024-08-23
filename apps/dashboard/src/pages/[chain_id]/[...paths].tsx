@@ -30,7 +30,12 @@ import { useRouter } from "next/router";
 import { ContractOG } from "og-lib/url-utils";
 import { PageId } from "page-id";
 import { useContext, useEffect, useMemo, useState } from "react";
-import { getAddress, getContract, isAddress } from "thirdweb";
+import {
+  type ThirdwebContract,
+  getAddress,
+  getContract,
+  isAddress,
+} from "thirdweb";
 import { getContractMetadata } from "thirdweb/extensions/common";
 import { isERC20 } from "thirdweb/extensions/erc20";
 import { isERC721 } from "thirdweb/extensions/erc721";
@@ -171,13 +176,6 @@ const ContractPage: ThirdwebNextPage = () => {
     });
   }, [contractAddress, v5Chain]);
 
-  const routes = useContractRouteConfig(contractAddress, contract);
-
-  const activeRoute = useMemo(
-    () => routes.find((route) => route.path === activeTab),
-    [activeTab, routes],
-  );
-
   if (!contractInfo) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -248,24 +246,42 @@ const ContractPage: ThirdwebNextPage = () => {
           </Flex>
         </Container>
       </Box>
-      {contract && (
+      {contract && <Inner contract={contract} activeTab={activeTab} />}
+    </Flex>
+  );
+};
+
+type InnerProps = {
+  contract: ThirdwebContract;
+  activeTab: string;
+};
+function Inner(props: InnerProps) {
+  const routes = useContractRouteConfig(props.contract.address, props.contract);
+
+  const activeRoute = useMemo(
+    () => routes.find((route) => route.path === props.activeTab),
+    [props.activeTab, routes],
+  );
+  return (
+    <>
+      {props.contract && (
         <ContractSidebar
-          contract={contract}
+          contract={props.contract}
           routes={routes}
           activeRoute={activeRoute}
         />
       )}
       <Container pt={8} maxW="container.page">
-        {activeRoute?.component && contractAddress && contract && (
+        {activeRoute?.component && props.contract && (
           <activeRoute.component
-            contractAddress={contractAddress}
-            contract={contract}
+            contractAddress={props.contract.address}
+            contract={props.contract}
           />
         )}
       </Container>
-    </Flex>
+    </>
   );
-};
+}
 
 export default ContractPage;
 ContractPage.pageId = PageId.DeployedContract;

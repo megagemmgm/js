@@ -1,5 +1,10 @@
 import { Box, ButtonGroup, Flex } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
 import type { ThirdwebContract } from "thirdweb";
+import {
+  isClaimToSupported,
+  isMintToSupported,
+} from "thirdweb/extensions/erc20";
 import { Card, Heading, LinkButton, Text } from "tw-components";
 import { TokenAirdropButton } from "./components/airdrop-button";
 import { TokenBurnButton } from "./components/burn-button";
@@ -11,16 +16,31 @@ import { TokenTransferButton } from "./components/transfer-button";
 interface ContractTokenPageProps {
   contract: ThirdwebContract;
   isERC20: boolean;
-  isERC20Mintable: boolean;
-  isERC20Claimable: boolean;
 }
 
 export const ContractTokensPage: React.FC<ContractTokenPageProps> = ({
   contract,
   isERC20,
-  isERC20Claimable,
-  isERC20Mintable,
 }) => {
+  const isERC20MintableQuery = useQuery({
+    queryKey: [
+      contract.chain.id,
+      contract.address,
+      "erc20",
+      "isMintToSupported",
+    ],
+    queryFn: () => isMintToSupported(contract),
+  });
+  const isERC20Claimable = useQuery({
+    queryKey: [
+      contract.chain.id,
+      contract.address,
+      "erc20",
+      "isClaimToSupported",
+    ],
+    queryFn: () => isClaimToSupported(contract),
+  });
+
   if (!isERC20) {
     return (
       <Card as={Flex} flexDir="column" gap={3}>
@@ -52,13 +72,14 @@ export const ContractTokensPage: React.FC<ContractTokenPageProps> = ({
           gap={2}
           w="inherit"
         >
-          {isERC20Claimable && <TokenClaimButton contract={contract} />}
+          {isERC20Claimable.data && <TokenClaimButton contract={contract} />}
           <TokenBurnButton contract={contract} />
 
           <TokenAirdropButton contract={contract} />
 
           <TokenTransferButton contract={contract} />
-          {isERC20Mintable && <TokenMintButton contract={contract} />}
+          {/* TODO: show skeleton or disabled while loading? */}
+          {isERC20MintableQuery.data && <TokenMintButton contract={contract} />}
         </ButtonGroup>
       </Flex>
 

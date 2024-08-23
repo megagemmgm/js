@@ -1,8 +1,11 @@
 import type { Address } from "abitype";
+import type { ThirdwebContract } from "../../../../contract/contract.js";
 import type { BaseTransactionOptions } from "../../../../transaction/types.js";
 import { getClaimParams } from "../../../../utils/extensions/drops/get-claim-params.js";
-import { claim } from "../../__generated__/IDropERC20/write/claim.js";
+import { allOf } from "../../../../utils/promise/conditionals.js";
+import * as generatedClaim from "../../__generated__/IDropERC20/write/claim.js";
 import { decimals } from "../../read/decimals.js";
+import { isGetActiveClaimConditionSupported } from "../read/getActiveClaimCondition.js";
 
 /**
  * Represents the parameters for claiming an ERC20 token.
@@ -34,7 +37,7 @@ export type ClaimToParams = {
  * @returns A promise that resolves with the submitted transaction hash.
  */
 export function claimTo(options: BaseTransactionOptions<ClaimToParams>) {
-  return claim({
+  return generatedClaim.claim({
     contract: options.contract,
     asyncParams: async () => {
       const quantity = await (async () => {
@@ -59,4 +62,13 @@ export function claimTo(options: BaseTransactionOptions<ClaimToParams>) {
       });
     },
   });
+}
+
+export async function isClaimToSupported(contract: ThirdwebContract) {
+  return allOf(
+    // has to support the claim method
+    generatedClaim.isClaimSupported(contract),
+    // has to support the getActiveClaimCondition method
+    isGetActiveClaimConditionSupported(contract),
+  );
 }
