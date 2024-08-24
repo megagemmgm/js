@@ -1,10 +1,10 @@
 "use client";
 
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createContext, useContext } from "react";
 import type { ThirdwebContract } from "../../../../../contract/contract.js";
-import { tokenURI } from "../../../../../extensions/erc721/__generated__/IERC721A/read/tokenURI.js";
-import { uri } from "../../../../../extensions/erc1155/__generated__/IERC1155/read/uri.js";
-import { useReadContract } from "../../../../../react/core/hooks/contract/useReadContract.js";
+import { getNFT as getNFT721 } from "../../../../../extensions/erc721/read/getNFT.js";
+import { getNFT as getNFT1155 } from "../../../../../extensions/erc1155/read/getNFT.js";
 import type { NFTMetadata } from "../../../../../utils/nft/parseNft.js";
 import { MediaRenderer } from "../../MediaRenderer/MediaRenderer.js";
 import type { MediaRendererProps } from "../../MediaRenderer/types.js";
@@ -18,7 +18,7 @@ export const NFTProviderContext = /* @__PURE__ */ createContext<
   NFTProviderProps | undefined
 >(undefined);
 
-export function NFT(props: React.PropsWithChildren<NFTProviderProps>) {
+export function NFTContext(props: React.PropsWithChildren<NFTProviderProps>) {
   return (
     <NFTProviderContext.Provider value={props}>
       {props.children}
@@ -34,21 +34,28 @@ function useNFTContext() {
   return ctx;
 }
 
-export type NFTMediaProps = MediaRendererProps & NFTProviderProps;
+export type NFTMediaProps = NFTProviderProps &
+  Omit<MediaRendererProps, "src" | "poster" | "client">;
 
-NFT.Media = (props: NFTProviderProps) => {
+export const Media = (props: NFTProviderProps) => {
   const context = useNFTContext();
   const contract = props.contract || context;
-  const mediaQuery = useReadContract(getNFTMedia, {
-    contract,
-    tokenId: props.tokenId,
+  const mediaQuery = useSuspenseQuery({
+    queryKey: [
+      "nft-media",
+      contract.chain.id,
+      contract.address,
+      props.tokenId.toString(),
+    ],
+    queryFn: () => getNFTMedia(props),
   });
   const animation_url = mediaQuery.data?.animation_url;
   const image = mediaQuery.data?.image;
+  const image_url = mediaQuery.data?.image_url;
   return (
     <MediaRenderer
       client={contract.client}
-      src={animation_url || image}
+      src={animation_url || image || image_url}
       poster={image}
       {...props}
     />
@@ -56,28 +63,17 @@ NFT.Media = (props: NFTProviderProps) => {
 };
 
 async function getNFTMedia(options: NFTProviderProps): Promise<NFTMetadata> {
-  const { contract, tokenId } = options;
-  /**
-   * No need to check whether a token is ERC721 or 1155 since it will take the
-   * same number of RPC requests, and will be slower. Instead just call both
-   * `tokenURI` and `uri`, then use the one that's available.
-   */
-  const [_tokenURI, _uri, { fetchTokenMetadata }] = await Promise.all([
-    tokenURI({ contract, tokenId }).catch(() => ""),
-    uri({ contract, tokenId }).catch(() => ""),
-    import("../../../../../utils/nft/fetchTokenMetadata.js"),
-  ]);
-  const url = _tokenURI || _uri;
-  if (!url) {
-    throw new Error(
-      `Could not get the URI for tokenId: ${tokenId}. Make sure the contract has the proper method to fetch it.`,
-    );
-  }
-  const metadata = await fetchTokenMetadata({
-    client: contract.client,
-    tokenId,
-    tokenUri: url,
+  const nft = await Promise.allSettled([
+    getNFT721(options),
+    getNFT1155(options),
+  ]).then(([possibleNFT721, possibleNFT1155]) => {
+    if (possibleNFT721.status === "fulfilled") {
+      return possibleNFT721.value;
+    }
+    if (possibleNFT1155.status === "fulfilled") {
+      return possibleNFT1155.value;
+    }
+    throw new Error("Failed to load NFT metadata");
   });
-
-  return metadata;
+  return nft.metadata;
 }
