@@ -19,6 +19,7 @@ export type Project = {
   slug: string;
   teamId: string;
   publishableKey: string;
+  // image: string; // TODO
 };
 
 export async function getProjects(teamSlug: string) {

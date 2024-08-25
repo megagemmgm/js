@@ -31,27 +31,26 @@ export default async function TeamLayout(props: {
         currentProject={undefined}
       />
 
-      <div className="bg-card">
-        <TeamTabs
-          links={[
-            {
-              href: `/team/${props.params.team_slug}`,
-              name: "Projects",
-              isEnabled: true,
-            },
-            {
-              href: `/team/${props.params.team_slug}/~/members`,
-              name: "Members",
-              isEnabled: true,
-            },
-            {
-              href: `/team/${props.params.team_slug}/~/settings`,
-              name: "Settings",
-              isEnabled: true,
-            },
-          ]}
-        />
-      </div>
+      <TeamTabs
+        links={[
+          {
+            href: `/team/${props.params.team_slug}`,
+            name: "Projects",
+            isEnabled: true,
+          },
+          {
+            href: `/team/${props.params.team_slug}/~/members`,
+            name: "Members",
+            isEnabled: true,
+          },
+          {
+            href: `/team/${props.params.team_slug}/~/settings`,
+            name: "Settings",
+            isEnabled: true,
+          },
+        ]}
+      />
+
       <main>{props.children}</main>
     </>
   );

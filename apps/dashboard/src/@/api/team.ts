@@ -8,6 +8,7 @@ const THIRDWEB_API_HOST =
 export type Team = {
   name: string;
   slug: string;
+  // image: string; // -> TODO
   billingPlan: "pro" | "growth" | "free";
   billingStatus: "validPayment" | (string & {}); // what's the other value?
 };

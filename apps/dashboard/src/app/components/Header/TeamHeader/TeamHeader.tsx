@@ -4,7 +4,11 @@ import { useActiveWallet } from "thirdweb/react";
 import type { Project } from "../../../../@/api/projects";
 import type { Team } from "../../../../@/api/team";
 import { useLoggedInUser } from "../../../../@3rdweb-sdk/react/hooks/useLoggedInUser";
-import { TeamHeaderUI } from "./TeamHeaderUI";
+import {
+  type TeamHeaderCompProps,
+  TeamHeaderDesktopUI,
+  TeamHeaderMobileUI,
+} from "./TeamHeaderUI";
 
 export function TeamHeader(props: {
   currentTeam: Team;
@@ -14,13 +18,18 @@ export function TeamHeader(props: {
   const { user } = useLoggedInUser();
   const activeWallet = useActiveWallet();
 
+  const headerProps: TeamHeaderCompProps = {
+    address: user?.address,
+    currentProject: props.currentProject,
+    currentTeam: props.currentTeam,
+    teamsAndProjects: props.teamsAndProjects,
+    walletId: activeWallet?.id,
+  };
+
   return (
-    <TeamHeaderUI
-      address={user?.address}
-      currentProject={props.currentProject}
-      currentTeam={props.currentTeam}
-      teamsAndProjects={props.teamsAndProjects}
-      walletId={activeWallet?.id}
-    />
+    <div>
+      <TeamHeaderDesktopUI {...headerProps} className="max-lg:hidden" />
+      <TeamHeaderMobileUI {...headerProps} className="lg:hidden" />
+    </div>
   );
 }

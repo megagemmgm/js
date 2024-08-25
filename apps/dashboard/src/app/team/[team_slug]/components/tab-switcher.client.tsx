@@ -9,6 +9,7 @@ export default function TeamTabs(props: {
   const pathname = usePathname();
   return (
     <TabLinks
+      tabContainerClassName="px-4 lg:px-6"
       links={props.links.map((l, i) => ({
         ...l,
         isActive: pathname ? l.href === pathname : i === 0,

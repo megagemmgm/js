@@ -3,7 +3,10 @@ import { useLayoutEffect } from "react";
 import { ThirdwebProvider } from "thirdweb/react";
 import type { Project } from "../@/api/projects";
 import type { Team } from "../@/api/team";
-import { TeamHeaderUI } from "../app/components/Header/TeamHeader/TeamHeaderUI";
+import {
+  TeamHeaderDesktopUI,
+  TeamHeaderMobileUI,
+} from "../app/components/Header/TeamHeader/TeamHeaderUI";
 
 const meta = {
   title: "Shadcn/Header",
@@ -84,61 +87,76 @@ const teamsAndProjects: Array<{ team: Team; projects: Project[] }> = [
   },
 ];
 
-function Story(props: {
+function Variants(props: {
   theme: "light" | "dark";
+  type: "mobile" | "desktop";
 }) {
+  const Comp =
+    props.type === "mobile" ? TeamHeaderMobileUI : TeamHeaderDesktopUI;
+
   return (
     <ThirdwebProvider>
       <ApplyTheme theme={props.theme} />
-      <div className="bg-zinc-700 p-4 h-screen">
-        <div className="flex flex-col gap-6">
-          <span className="text-white font-bold">
-            Connected, No Current Project, Free
-          </span>
-          <TeamHeaderUI
-            teamsAndProjects={teamsAndProjects}
-            currentTeam={teamsAndProjects[0].team}
-            address={"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"} // vitalik.eth
-            walletId="io.metamask"
-            currentProject={undefined}
-          />
+      <div className="flex flex-col gap-6">
+        <span className="text-white font-bold">
+          Connected, No Current Project, Free
+        </span>
+        <Comp
+          teamsAndProjects={teamsAndProjects}
+          currentTeam={teamsAndProjects[0].team}
+          address={"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"} // vitalik.eth
+          walletId="io.metamask"
+          currentProject={undefined}
+        />
 
-          <span className="text-white font-bold">
-            Not yet Connected, No Current Project, Growth
-          </span>
+        <span className="text-white font-bold">
+          Not yet Connected, No Current Project, Growth
+        </span>
 
-          <TeamHeaderUI
-            teamsAndProjects={teamsAndProjects}
-            currentTeam={teamsAndProjects[1].team}
-            address={undefined}
-            walletId={undefined}
-            currentProject={undefined}
-          />
+        <Comp
+          teamsAndProjects={teamsAndProjects}
+          currentTeam={teamsAndProjects[1].team}
+          address={undefined}
+          walletId={undefined}
+          currentProject={undefined}
+        />
 
-          <span className="text-white font-bold">
-            Not yet Connected, No Current Project, Pro
-          </span>
-          <TeamHeaderUI
-            teamsAndProjects={teamsAndProjects}
-            currentTeam={teamsAndProjects[2].team}
-            address={undefined}
-            walletId={undefined}
-            currentProject={undefined}
-          />
+        <span className="text-white font-bold">
+          Not yet Connected, No Current Project, Pro
+        </span>
+        <Comp
+          teamsAndProjects={teamsAndProjects}
+          currentTeam={teamsAndProjects[2].team}
+          address={undefined}
+          walletId={undefined}
+          currentProject={undefined}
+        />
 
-          <span className="text-white font-bold">
-            Not yet Connected, Current Project, Pro
-          </span>
-          <TeamHeaderUI
-            teamsAndProjects={teamsAndProjects}
-            currentTeam={teamsAndProjects[2].team}
-            address={undefined}
-            walletId={undefined}
-            currentProject={teamsAndProjects[2].projects[0]}
-          />
-        </div>
+        <span className="text-white font-bold">
+          Not yet Connected, Current Project, Pro
+        </span>
+        <Comp
+          teamsAndProjects={teamsAndProjects}
+          currentTeam={teamsAndProjects[2].team}
+          address={undefined}
+          walletId={undefined}
+          currentProject={teamsAndProjects[2].projects[0]}
+        />
       </div>
     </ThirdwebProvider>
+  );
+}
+
+function Story(props: { theme: "light" | "dark" }) {
+  return (
+    <div className="bg-zinc-700 p-4">
+      <h2 className="text-3xl mb-2"> Desktop </h2>
+      <Variants theme={props.theme} type="desktop" />
+      <h2 className="mt-10 text-3xl mb-2"> Mobile </h2>
+      <div className="w-[400px]">
+        <Variants theme={props.theme} type="mobile" />
+      </div>
+    </div>
   );
 }
 

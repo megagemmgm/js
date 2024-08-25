@@ -40,32 +40,30 @@ export default async function TeamLayout(props: {
         currentTeam={team}
         teamsAndProjects={teamsAndProjects}
       />
-      <div className="px-6">
-        <TeamTabs
-          links={[
-            {
-              href: `/team/${props.params.team_slug}/${props.params.project_slug}/connect`,
-              name: "Connect",
-              isEnabled: true,
-            },
-            {
-              href: `/team/${props.params.team_slug}/${props.params.project_slug}/contracts`,
-              name: "Contracts",
-              isEnabled: true,
-            },
-            {
-              href: `/team/${props.params.team_slug}/${props.params.project_slug}/engine`,
-              name: "Engine",
-              isEnabled: true,
-            },
-            {
-              href: `/team/${props.params.team_slug}/${props.params.project_slug}/settings`,
-              name: "Settings",
-              isEnabled: true,
-            },
-          ]}
-        />
-      </div>
+      <TeamTabs
+        links={[
+          {
+            href: `/team/${props.params.team_slug}/${props.params.project_slug}/connect`,
+            name: "Connect",
+            isEnabled: true,
+          },
+          {
+            href: `/team/${props.params.team_slug}/${props.params.project_slug}/contracts`,
+            name: "Contracts",
+            isEnabled: true,
+          },
+          {
+            href: `/team/${props.params.team_slug}/${props.params.project_slug}/engine`,
+            name: "Engine",
+            isEnabled: true,
+          },
+          {
+            href: `/team/${props.params.team_slug}/${props.params.project_slug}/settings`,
+            name: "Settings",
+            isEnabled: true,
+          },
+        ]}
+      />
       <main>{props.children}</main>
     </>
   );

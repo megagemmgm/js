@@ -17,6 +17,7 @@ export type TabLink = {
 export function TabLinks(props: {
   links: TabLink[];
   className?: string;
+  tabContainerClassName?: string;
 }) {
   const { containerRef, lineRef, activeTabRef } =
     useUnderline<HTMLAnchorElement>();
@@ -24,7 +25,10 @@ export function TabLinks(props: {
   return (
     <div className={cn("relative", props.className)}>
       <ScrollShadow scrollableClassName="pb-[8px] relative">
-        <div className="flex" ref={containerRef}>
+        <div
+          className={cn("flex", props.tabContainerClassName)}
+          ref={containerRef}
+        >
           {props.links.map((tab) => {
             return (
               <Button
@@ -60,7 +64,7 @@ export function TabLinks(props: {
         />
       </ScrollShadow>
       {/* Bottom line */}
-      <div className="h-[1px] bg-border -translate-y-[2px] -mx-6" />
+      <div className="h-[1px] bg-border -translate-y-[2px]" />
     </div>
   );
 }
@@ -133,24 +137,33 @@ function useUnderline<El extends HTMLElement>() {
   }, []);
 
   useIsomorphicLayoutEffect(() => {
-    if (activeTabEl && containerRef.current && lineRef.current) {
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const lineEl = lineRef.current;
-      const rect = activeTabEl.getBoundingClientRect();
-      lineEl.style.width = `${rect.width}px`;
-      lineEl.style.transform = `translateX(${
-        rect.left - containerRect.left
-      }px)`;
-      setTimeout(() => {
-        lineEl.style.transition = "transform 0.3s, width 0.3s";
-      }, 0);
+    function update() {
+      if (activeTabEl && containerRef.current && lineRef.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const lineEl = lineRef.current;
+        const rect = activeTabEl.getBoundingClientRect();
+        lineEl.style.width = `${rect.width}px`;
+        lineEl.style.transform = `translateX(${
+          rect.left - containerRect.left
+        }px)`;
+        setTimeout(() => {
+          lineEl.style.transition = "transform 0.3s, width 0.3s";
+        }, 0);
 
-      activeTabEl.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+        activeTabEl.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
     }
+
+    update();
+    // add event listener for resize
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+    };
   }, [activeTabEl]);
 
   return { containerRef, lineRef, activeTabRef };

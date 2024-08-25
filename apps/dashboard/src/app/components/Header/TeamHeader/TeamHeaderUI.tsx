@@ -5,23 +5,34 @@ import { Badge } from "@/components/ui/badge";
 import { thirdwebClient } from "@/constants/client";
 import Link from "next/link";
 import type { WalletId } from "thirdweb/wallets";
+import { cn } from "../../../../@/lib/utils";
 import { AccountButton } from "../../../team/[team_slug]/components/account-button.client";
 import { ThirdwebMiniLogo } from "../../ThirdwebMiniLogo";
-import { TeamAndProjectSelectorButton } from "./TeamAndProjectSelector";
+import { ProjectSelectorMobileMenuButton } from "./ProjectSelectorMobileMenuButton";
+import { TeamAndProjectSelectorPopoverButton } from "./TeamAndProjectSelectorPopoverButton";
+import { TeamSelectorMobileMenuButton } from "./TeamSelectorMobileMenuButton";
 import { getValidTeamPlan } from "./getValidTeamPlan";
 
-export function TeamHeaderUI(props: {
+export type TeamHeaderCompProps = {
   currentTeam: Team;
   teamsAndProjects: Array<{ team: Team; projects: Project[] }>;
   address: string | undefined;
   walletId: WalletId | undefined;
   currentProject: Project | undefined;
-}) {
+  className?: string;
+};
+
+export function TeamHeaderDesktopUI(props: TeamHeaderCompProps) {
   const { currentTeam } = props;
   const teamPlan = getValidTeamPlan(currentTeam);
 
   return (
-    <header className="flex flex-row gap-2 items-center bg-background text-foreground justify-between px-6 py-4">
+    <header
+      className={cn(
+        "flex flex-row gap-2 items-center bg-background text-foreground justify-between px-6 py-4",
+        props.className,
+      )}
+    >
       <div className="flex items-center gap-2">
         <ThirdwebMiniLogo className="h-5" />
 
@@ -32,6 +43,9 @@ export function TeamHeaderUI(props: {
             href={`/team/${currentTeam.slug}`}
             className="font-normal text-sm flex flex-row gap-2 items-center text-foreground"
           >
+            {/* TODO - replace with team image */}
+            <div className="bg-border size-7 rounded-full" />
+
             <span className="font-semibold"> {currentTeam.name} </span>
             <Badge
               variant={
@@ -47,7 +61,7 @@ export function TeamHeaderUI(props: {
             </Badge>
           </Link>
 
-          <TeamAndProjectSelectorButton
+          <TeamAndProjectSelectorPopoverButton
             currentProject={props.currentProject}
             currentTeam={props.currentTeam}
             teamsAndProjects={props.teamsAndProjects}
@@ -58,19 +72,21 @@ export function TeamHeaderUI(props: {
         {props.currentProject && (
           <>
             <SlashSeparator />
-            <Link
-              href={`/team/${props.currentTeam.slug}/${props.currentProject.slug}`}
-              className="font-semibold text-sm flex flex-row gap-1 items-center"
-            >
-              {props.currentProject.name}
-            </Link>
+            <div className="flex items-center gap-1">
+              <Link
+                href={`/team/${props.currentTeam.slug}/${props.currentProject.slug}`}
+                className="font-semibold text-sm flex flex-row gap-1 items-center"
+              >
+                {props.currentProject.name}
+              </Link>
 
-            <TeamAndProjectSelectorButton
-              currentProject={props.currentProject}
-              currentTeam={props.currentTeam}
-              teamsAndProjects={props.teamsAndProjects}
-              focus="project-selection"
-            />
+              <TeamAndProjectSelectorPopoverButton
+                currentProject={props.currentProject}
+                currentTeam={props.currentTeam}
+                teamsAndProjects={props.teamsAndProjects}
+                focus="project-selection"
+              />
+            </div>
           </>
         )}
       </div>
@@ -89,6 +105,74 @@ export function TeamHeaderUI(props: {
 
 function SlashSeparator() {
   return (
-    <div className="h-5 w-[1px] bg-muted-foreground/80 rotate-[25deg] mx-2" />
+    <div className="h-5 w-[1px] bg-muted-foreground rotate-[25deg] mx-2" />
+  );
+}
+
+export function TeamHeaderMobileUI(props: TeamHeaderCompProps) {
+  const { currentTeam } = props;
+  const projects = props.teamsAndProjects.find(
+    (x) => x.team.slug === props.currentTeam.slug,
+  )?.projects;
+
+  return (
+    <header
+      className={cn(
+        "flex flex-row gap-2 items-center bg-background text-foreground justify-between px-4 py-4",
+        props.className,
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/team/${currentTeam.slug}`}
+            className={cn(
+              "font-normal text-sm flex flex-row items-center text-foreground gap-2",
+            )}
+          >
+            {/* TODO - replace with team image */}
+            <div className="bg-border size-7 rounded-full" />
+
+            {!props.currentProject && (
+              <span className="font-semibold">{currentTeam.name}</span>
+            )}
+          </Link>
+
+          <TeamSelectorMobileMenuButton
+            currentTeam={props.currentTeam}
+            teamsAndProjects={props.teamsAndProjects}
+          />
+        </div>
+
+        {props.currentProject && projects && (
+          <>
+            <SlashSeparator />
+            <div className="flex items-center gap-1">
+              <Link
+                href={`/team/${props.currentTeam.slug}/${props.currentProject.slug}`}
+                className="font-semibold text-sm flex flex-row gap-1 items-center"
+              >
+                {props.currentProject.name}
+              </Link>
+
+              <ProjectSelectorMobileMenuButton
+                currentProject={props.currentProject}
+                projects={projects}
+                team={props.currentTeam}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <ColorModeToggle />
+        <AccountButton
+          client={thirdwebClient}
+          address={props.address}
+          walletId={props.walletId}
+        />
+      </div>
+    </header>
   );
 }
