@@ -24,7 +24,7 @@ export default async function TeamLayout(props: {
   }
 
   return (
-    <>
+    <div className="h-full flex flex-col">
       <TeamHeader
         currentTeam={team}
         teamsAndProjects={teamsAndProjects}
@@ -51,7 +51,7 @@ export default async function TeamLayout(props: {
         ]}
       />
 
-      <main>{props.children}</main>
-    </>
+      <main className="grow">{props.children}</main>
+    </div>
   );
 }

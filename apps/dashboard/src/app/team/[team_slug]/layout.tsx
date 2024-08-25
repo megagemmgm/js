@@ -1,3 +1,4 @@
+import { AppFooter } from "../../../@/components/blocks/app-footer";
 import { TWAutoConnect } from "./components/autoconnect";
 
 export default async function RootTeamLayout(props: {
@@ -5,9 +6,10 @@ export default async function RootTeamLayout(props: {
   params: { team_slug: string };
 }) {
   return (
-    <>
-      {props.children}
+    <div className="h-full outline flex flex-col ">
+      <div className="grow">{props.children}</div>
       <TWAutoConnect />
-    </>
+      <AppFooter />
+    </div>
   );
 }

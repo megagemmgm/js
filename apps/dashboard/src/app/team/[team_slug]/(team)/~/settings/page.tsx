@@ -1,9 +1,9 @@
 export default function Page() {
   return (
-    <div className="container">
-      <div className="h-[500px] border rounded-lg my-8 flex items-center justify-center">
-        <h1>Settings</h1>
-      </div>
+    <div className="h-full py-6 container flex items-center justify-center">
+      <h1 className="text-4xl tracking-tighter text-muted-foreground">
+        Settings
+      </h1>
     </div>
   );
 }
