@@ -1,7 +1,9 @@
-export default function ProjectConnectPage() {
+export default function Page() {
   return (
     <div className="container">
-      <h1>Contracts</h1>
+      <div className="h-[500px] border rounded-lg my-8 flex items-center justify-center">
+        <h1>Contracts</h1>
+      </div>
     </div>
   );
 }

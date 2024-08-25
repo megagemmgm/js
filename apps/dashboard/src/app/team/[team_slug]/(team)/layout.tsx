@@ -39,8 +39,8 @@ export default async function TeamLayout(props: {
             isEnabled: true,
           },
           {
-            href: `/team/${props.params.team_slug}/~/members`,
-            name: "Members",
+            href: `/team/${props.params.team_slug}/~/usage`,
+            name: "Usage",
             isEnabled: true,
           },
           {
