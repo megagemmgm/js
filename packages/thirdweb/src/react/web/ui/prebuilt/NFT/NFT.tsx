@@ -79,7 +79,7 @@ export type NFTMediaProps = Omit<
  *
  * Since this component has an internal loading state (for when the NFT media is being fetched),
  * you must wrapped it with React.Suspense to make it work.
- * 
+ *
  * @component
  * @example
  * ### Basic usage
