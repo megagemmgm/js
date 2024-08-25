@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getNFTMedia } from "./NFT.js";
 import { DOODLES_CONTRACT } from "~test/test-contracts.js";
+import { getNFTMedia } from "./NFT.js";
 
 describe.runIf(process.env.TW_SECRET_KEY)("NFT prebuilt component", () => {
   it("should fetch the NFT metadata", async () => {

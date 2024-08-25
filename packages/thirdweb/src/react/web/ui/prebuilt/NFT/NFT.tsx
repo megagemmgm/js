@@ -14,13 +14,39 @@ export type NFTProviderProps = {
   tokenId: bigint;
 };
 
-export const NFTProviderContext = /* @__PURE__ */ createContext<
+const NFTProviderContext = /* @__PURE__ */ createContext<
   NFTProviderProps | undefined
 >(undefined);
 
-export default function NFTContext(
-  props: React.PropsWithChildren<NFTProviderProps>,
-) {
+/**
+ * A React context provider component that supplies NFT-related data to its child components.
+ *
+ * This component serves as a wrapper around the `NFTProviderContext.Provider` and passes
+ * the provided NFT data down to all of its child components through the context API.
+ *
+ *
+ * @component
+ * @param {React.PropsWithChildren<NFTProviderProps>} props - The props for the NFT provider
+ *
+ * @example
+ * ```tsx
+ * import { getContract } from "thirdweb";
+ * import { NFT } from "thirdweb/react";
+ *
+ * const contract = getContract({
+ *   address: "0x...",
+ *   chain: ethereum,
+ *   client: yourThirdwebClient,
+ * });
+ *
+ * <NFT contract={contract} tokenId={0n}>
+ *   <Suspense fallback={"Loading media..."}>
+ *     <NFT.Media />
+ *   </Suspense>
+ * </NFT>
+ * ```
+ */
+export function NFT(props: React.PropsWithChildren<NFTProviderProps>) {
   return (
     <NFTProviderContext.Provider value={props}>
       {props.children}
@@ -46,7 +72,36 @@ export type NFTMediaProps = Omit<
   "src" | "poster" | "client"
 >;
 
-export const Media = (props: NFTMediaProps) => {
+/**
+ * This component fetches and displays an NFT's media. It uses thirdweb MediaRenderer under the hood
+ * so you can style it just like how you would style a MediaRenderer.
+ * @returns A MediaRenderer component
+ *
+ * Since this component has an internal loading state (for when the NFT media is being fetched),
+ * you must wrapped it with React.Suspense to make it work.
+ * 
+ * @component
+ * @example
+ * ### Basic usage
+ * ```tsx
+ * import { getContract } from "thirdweb";
+ * import { NFT } from "thirdweb/react";
+ *
+ * const nftContract = getContract({
+ *   address: "0x...",
+ *   chain: ethereum,
+ *   client: yourThirdwebClient,
+ * });
+ *
+ * <NFT contract={nftContract} tokenId={0n}>
+ *   This will show the media for tokenId #0 from the `nftContract` collection
+ *   <Suspense fallback={"Loading media..."}>
+ *     <NFT.Media />
+ *   </Suspense>
+ * </NFT>
+ * ```
+ */
+NFT.Media = (props: NFTMediaProps) => {
   const { contract, tokenId } = useNFTContext();
   const mediaQuery = useSuspenseQuery({
     queryKey: [
@@ -59,9 +114,10 @@ export const Media = (props: NFTMediaProps) => {
   });
   const animation_url = mediaQuery.data?.animation_url;
   const image = mediaQuery.data?.image || mediaQuery.data?.image_url;
+
   return (
     <MediaRenderer
-      client={contract?.client}
+      client={contract.client}
       src={animation_url || image}
       poster={image}
       {...props}
@@ -79,10 +135,18 @@ export async function getNFTMedia(
     getNFT721(options),
     getNFT1155(options),
   ]).then(([possibleNFT721, possibleNFT1155]) => {
-    if (possibleNFT721.status === "fulfilled") {
+    // getNFT extension always return an NFT object
+    // so we need to check if the tokenURI exists
+    if (
+      possibleNFT721.status === "fulfilled" &&
+      possibleNFT721.value.tokenURI
+    ) {
       return possibleNFT721.value;
     }
-    if (possibleNFT1155.status === "fulfilled") {
+    if (
+      possibleNFT1155.status === "fulfilled" &&
+      possibleNFT1155.value.tokenURI
+    ) {
       return possibleNFT1155.value;
     }
     throw new Error("Failed to load NFT metadata");
