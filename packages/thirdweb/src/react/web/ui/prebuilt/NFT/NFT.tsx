@@ -18,7 +18,9 @@ export const NFTProviderContext = /* @__PURE__ */ createContext<
   NFTProviderProps | undefined
 >(undefined);
 
-export function NFTContext(props: React.PropsWithChildren<NFTProviderProps>) {
+export default function NFTContext(
+  props: React.PropsWithChildren<NFTProviderProps>,
+) {
   return (
     <NFTProviderContext.Provider value={props}>
       {props.children}
@@ -31,38 +33,48 @@ export function NFTContext(props: React.PropsWithChildren<NFTProviderProps>) {
  */
 function useNFTContext() {
   const ctx = useContext(NFTProviderContext);
+  if (!ctx) {
+    throw new Error(
+      "NFTProviderContext not found. Make sure you are using NFT.Media, NFT.Description, etc. inside a <NFT /> component",
+    );
+  }
   return ctx;
 }
 
-export type NFTMediaProps = NFTProviderProps &
-  Omit<MediaRendererProps, "src" | "poster" | "client">;
+export type NFTMediaProps = Omit<
+  MediaRendererProps,
+  "src" | "poster" | "client"
+>;
 
-export const Media = (props: NFTProviderProps) => {
-  const context = useNFTContext();
-  const contract = props.contract || context;
+export const Media = (props: NFTMediaProps) => {
+  const { contract, tokenId } = useNFTContext();
   const mediaQuery = useSuspenseQuery({
     queryKey: [
       "nft-media",
       contract.chain.id,
       contract.address,
-      props.tokenId.toString(),
+      tokenId.toString(),
     ],
-    queryFn: () => getNFTMedia(props),
+    queryFn: () => getNFTMedia({ contract, tokenId }),
   });
   const animation_url = mediaQuery.data?.animation_url;
-  const image = mediaQuery.data?.image;
-  const image_url = mediaQuery.data?.image_url;
+  const image = mediaQuery.data?.image || mediaQuery.data?.image_url;
   return (
     <MediaRenderer
-      client={contract.client}
-      src={animation_url || image || image_url}
+      client={contract?.client}
+      src={animation_url || image}
       poster={image}
       {...props}
     />
   );
 };
 
-async function getNFTMedia(options: NFTProviderProps): Promise<NFTMetadata> {
+/**
+ * @internal
+ */
+export async function getNFTMedia(
+  options: NFTProviderProps,
+): Promise<NFTMetadata> {
   const nft = await Promise.allSettled([
     getNFT721(options),
     getNFT1155(options),
