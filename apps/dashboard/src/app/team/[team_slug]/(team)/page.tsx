@@ -1,5 +1,5 @@
 import { getProjects } from "@/api/projects";
-import { TeamOverviewPage } from "./OverviewPageContent";
+import { TeamOverviewPage } from "./TeamOverviewPage";
 
 export default async function Page(props: {
   params: { team_slug: string };

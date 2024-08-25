@@ -1,9 +1,9 @@
 "use client";
 
+import type { Project } from "@/api/projects";
+import type { Team } from "@/api/team";
+import { useLoggedInUser } from "@3rdweb-sdk/react/hooks/useLoggedInUser";
 import { useActiveWallet } from "thirdweb/react";
-import type { Project } from "../../../../@/api/projects";
-import type { Team } from "../../../../@/api/team";
-import { useLoggedInUser } from "../../../../@3rdweb-sdk/react/hooks/useLoggedInUser";
 import {
   type TeamHeaderCompProps,
   TeamHeaderDesktopUI,

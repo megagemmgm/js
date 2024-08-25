@@ -2,10 +2,10 @@
 
 import type { Project } from "@/api/projects";
 import type { Team } from "@/api/team";
+import { DynamicHeight } from "@/components/ui/DynamicHeight";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ChevronsUpDownIcon } from "lucide-react";
-import { DynamicHeight } from "../../../../@/components/ui/DynamicHeight";
 import { TeamSelectionUI } from "./TeamSelectionUI";
 
 type TeamSwitcherProps = {

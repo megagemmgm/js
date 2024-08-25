@@ -73,7 +73,7 @@ function ProjectCard(props: {
   return (
     <div
       key={project.id}
-      className="border rounded-lg p-4 relative hover:bg-muted/50 flex items-center gap-4"
+      className="border rounded-lg p-4 relative hover:bg-muted/70 flex items-center gap-4 bg-muted/20 transition-colors"
     >
       {/* TODO - replace with project image */}
       <div className="size-10 rounded-full bg-border shrink-0" />
@@ -81,7 +81,8 @@ function ProjectCard(props: {
       <div>
         <Link
           className="static group before:absolute before:top-0 before:bottom-0 before:left-0 before:right-0 before:z-0"
-          href={`/team/${team_slug}/${project.slug}`}
+          // remove /connect when we have overview page
+          href={`/team/${team_slug}/${project.slug}/connect`}
         >
           <h2 className="text-base">{project.name}</h2>
         </Link>

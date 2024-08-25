@@ -53,7 +53,8 @@ export function ProjectSelectorUI(props: {
                     variant="ghost"
                     asChild
                   >
-                    <Link href={`/team/${team.slug}/${project.slug}`}>
+                    {/* TODO - when we have overview page, remove /connect */}
+                    <Link href={`/team/${team.slug}/${project.slug}/connect`}>
                       <span className="truncate"> {project.name} </span>
                       {isSelected && (
                         <CheckIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
