@@ -1,37 +1,26 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { thirdwebClient } from "@/constants/client";
-import { useLoggedInUser } from "@3rdweb-sdk/react/hooks/useLoggedInUser";
 import { useQuery } from "@tanstack/react-query";
-import { resolveAvatar, resolveName } from "thirdweb/extensions/ens";
-import { useAutoConnect, useWalletDetailsModal } from "thirdweb/react";
-
-import { useTheme } from "next-themes";
 import type { ThirdwebClient } from "thirdweb";
+import { resolveAvatar, resolveName } from "thirdweb/extensions/ens";
+import type { WalletId } from "thirdweb/wallets";
 import { ActiveWalletLogo } from "./active-wallet-logo";
 
 export function AccountButton(props: {
   client: ThirdwebClient;
-  initialData?: string | null;
+  address: string | undefined;
+  walletId: WalletId | undefined;
 }) {
-  // trigger auto-connection of the wallet
-  useAutoConnect({
-    client: thirdwebClient,
-  });
-  // use the connected user (also ensures login state!)
-  const loggedInUser = useLoggedInUser();
-  const { open } = useWalletDetailsModal();
-
   const ensAvatar = useQuery({
-    queryKey: ["ens-avatar", loggedInUser.user?.address],
+    queryKey: ["ens-avatar", props.address],
     queryFn: async () => {
-      if (!loggedInUser.user?.address) {
+      if (!props.address) {
         throw new Error("No wallet connected");
       }
       const ensName = await resolveName({
         client: props.client,
-        address: loggedInUser.user.address,
+        address: props.address,
       });
       if (!ensName) {
         return null;
@@ -41,12 +30,8 @@ export function AccountButton(props: {
         name: ensName,
       });
     },
-    enabled: !!loggedInUser.user?.address,
-    // initialize the query with the intial data if available
-    placeholderData: props.initialData,
+    enabled: !!props.address,
   });
-
-  const { theme } = useTheme();
 
   let content: React.ReactNode;
   if (ensAvatar.data) {
@@ -58,21 +43,23 @@ export function AccountButton(props: {
           className="h-full w-full rounded-full"
           alt=""
         />
-        <ActiveWalletLogo className="size-5 rounded-full absolute top-0 right-0 translate-x-2 -translate-y-2 border border-card" />
+        <ActiveWalletLogo
+          className="size-5 rounded-full absolute top-0 right-0 translate-x-2 -translate-y-2 border border-card"
+          walletId={props.walletId}
+        />
       </>
     );
   } else {
-    content = <ActiveWalletLogo className="h-full w-full rounded-full" />;
+    content = (
+      <ActiveWalletLogo
+        className="h-full w-full rounded-full"
+        walletId={props.walletId}
+      />
+    );
   }
 
   return (
     <Button
-      onClick={() => {
-        open({
-          client: props.client,
-          theme: theme === "light" ? "light" : "dark",
-        });
-      }}
       size="icon"
       className="rounded-full relative hover:outline-primary hover:outline hover:outline-2 hover:outline-offset-2"
       variant="ghost"

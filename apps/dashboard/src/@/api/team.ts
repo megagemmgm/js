@@ -8,8 +8,8 @@ const THIRDWEB_API_HOST =
 export type Team = {
   name: string;
   slug: string;
-  billingPlan: string;
-  billingStatus: string;
+  billingPlan: "pro" | "growth" | "free";
+  billingStatus: "validPayment" | (string & {}); // what's the other value?
 };
 
 export async function getTeamBySlug(slug: string) {

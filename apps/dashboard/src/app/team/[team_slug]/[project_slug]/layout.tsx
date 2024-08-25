@@ -1,13 +1,46 @@
+import { getProjects } from "@/api/projects";
+import { getTeams } from "@/api/team";
+import { redirect } from "next/navigation";
+import { TeamHeader } from "../../../components/Header/TeamHeader/TeamHeader";
 import TeamTabs from "../components/tab-switcher.client";
 
-export default function TeamLayout(props: {
+export default async function TeamLayout(props: {
   children: React.ReactNode;
   breadcrumbNav: React.ReactNode;
   params: { team_slug: string; project_slug: string };
 }) {
+  const teams = await getTeams();
+  const team = teams.find((t) => t.slug === props.params.team_slug);
+
+  if (!team) {
+    // not a valid team, redirect back to 404
+    redirect("/404");
+  }
+
+  const teamsAndProjects = await Promise.all(
+    teams.map(async (team) => ({
+      team,
+      projects: await getProjects(team.slug),
+    })),
+  );
+
+  const project = teamsAndProjects
+    .find((t) => t.team.slug === props.params.team_slug)
+    ?.projects.find((p) => p.slug === props.params.project_slug);
+
+  if (!project) {
+    // not a valid project, redirect back to team page
+    redirect(`/team/${props.params.team_slug}`);
+  }
+
   return (
     <>
-      <div className="bg-card">
+      <TeamHeader
+        currentProject={project}
+        currentTeam={team}
+        teamsAndProjects={teamsAndProjects}
+      />
+      <div className="px-6">
         <TeamTabs
           links={[
             {

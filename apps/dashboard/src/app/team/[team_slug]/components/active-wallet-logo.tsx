@@ -1,30 +1,28 @@
 "use client";
-
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { useActiveWallet } from "thirdweb/react";
-import { getWalletInfo } from "thirdweb/wallets";
+import { type WalletId, getWalletInfo } from "thirdweb/wallets";
 
 export function ActiveWalletLogo(props: {
   className?: string;
+  walletId: WalletId | undefined;
 }) {
-  const connectedWallet = useActiveWallet();
-
-  const walletQuery = useQuery({
-    queryKey: ["walletInfo", connectedWallet?.id],
+  const { walletId } = props;
+  const imageQuery = useQuery({
+    queryKey: ["walletInfo", walletId],
     queryFn: () => {
-      if (!connectedWallet?.id) {
+      if (!walletId) {
         throw new Error("No wallet connected");
       }
-      return getWalletInfo(connectedWallet.id, true);
+      return getWalletInfo(walletId, true);
     },
-    enabled: !!connectedWallet?.id,
+    enabled: !!walletId,
   });
 
-  return walletQuery.data ? (
+  return imageQuery.data ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={walletQuery.data} alt="Account" className={props.className} />
+    <img src={imageQuery.data} alt="Account" className={props.className} />
   ) : (
-    <Skeleton className={props.className} />
+    <div className={cn("bg-muted", props.className)} />
   );
 }

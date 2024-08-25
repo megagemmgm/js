@@ -16,13 +16,14 @@ export type TabLink = {
 
 export function TabLinks(props: {
   links: TabLink[];
+  className?: string;
 }) {
   const { containerRef, lineRef, activeTabRef } =
     useUnderline<HTMLAnchorElement>();
 
   return (
-    <div className="relative px-6">
-      <ScrollShadow scrollableClassName="pb-1 relative">
+    <div className={cn("relative", props.className)}>
+      <ScrollShadow scrollableClassName="pb-[8px] relative">
         <div className="flex" ref={containerRef}>
           {props.links.map((tab) => {
             return (
