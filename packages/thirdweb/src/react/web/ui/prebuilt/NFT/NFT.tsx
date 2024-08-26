@@ -5,7 +5,7 @@ import { createContext, useContext } from "react";
 import type { ThirdwebContract } from "../../../../../contract/contract.js";
 import { getNFT as getNFT721 } from "../../../../../extensions/erc721/read/getNFT.js";
 import { getNFT as getNFT1155 } from "../../../../../extensions/erc1155/read/getNFT.js";
-import type { NFTMetadata } from "../../../../../utils/nft/parseNft.js";
+import type { NFT as NFTType } from "../../../../../utils/nft/parseNft.js";
 import { MediaRenderer } from "../../MediaRenderer/MediaRenderer.js";
 import type { MediaRendererProps } from "../../MediaRenderer/types.js";
 
@@ -45,6 +45,7 @@ export const NFTProviderContext = /* @__PURE__ */ createContext<
  * <NFT contract={contract} tokenId={0n}>
  *   <Suspense fallback={"Loading media..."}>
  *     <NFT.Media />
+ *     <NFT.Description />
  *   </Suspense>
  * </NFT>
  * ```
@@ -106,17 +107,18 @@ export type NFTMediaProps = Omit<
  */
 NFT.Media = (props: NFTMediaProps) => {
   const { contract, tokenId } = useNFTContext();
-  const mediaQuery = useSuspenseQuery({
+  const nftQuery = useSuspenseQuery({
     queryKey: [
-      "nft-media",
+      "__nft_info_internal__",
       contract.chain.id,
       contract.address,
       tokenId.toString(),
     ],
-    queryFn: () => getNFTMedia({ contract, tokenId }),
+    queryFn: () => getNFTInfo({ contract, tokenId }),
   });
-  const animation_url = mediaQuery.data?.animation_url;
-  const image = mediaQuery.data?.image || mediaQuery.data?.image_url;
+  const animation_url = nftQuery.data?.metadata.animation_url;
+  const image =
+    nftQuery.data?.metadata.image || nftQuery.data?.metadata.image_url;
 
   return (
     <MediaRenderer
@@ -129,11 +131,100 @@ NFT.Media = (props: NFTMediaProps) => {
 };
 
 /**
+ * This component fetches and displays an NFT's name. It takes in a `className` and `style` props
+ * so you can style it just like how you would style a <div> element.
+ * @returns A <div> element
+ *
+ * Since this component has an internal loading state (for when the NFT media is being fetched),
+ * you must wrapped it with React.Suspense to make it work.
+ *
+ * @component
+ * @example
+ * ### Basic usage
+ * ```tsx
+ * import { getContract } from "thirdweb";
+ * import { NFT } from "thirdweb/react";
+ *
+ * const nftContract = getContract({
+ *   address: "0x...",
+ *   chain: ethereum,
+ *   client: yourThirdwebClient,
+ * });
+ *
+ * <NFT contract={nftContract} tokenId={0n}>
+ *   This will show the name for tokenId #0 from the `nftContract` collection
+ *   <Suspense fallback={"Loading media..."}>
+ *     <NFT.Name className="mx-auto" style={{ color: "red" }} />
+ *   </Suspense>
+ * </NFT>
+ * ```
+ */
+NFT.Name = (props: { className?: string; style?: React.CSSProperties }) => {
+  const { contract, tokenId } = useNFTContext();
+  const nftQuery = useSuspenseQuery({
+    queryKey: [
+      "__nft_info_internal__",
+      contract.chain.id,
+      contract.address,
+      tokenId.toString(),
+    ],
+    queryFn: () => getNFTInfo({ contract, tokenId }),
+  });
+  const name = nftQuery.data?.metadata.name || "";
+  return <div {...props}>{name}</div>;
+};
+
+/**
+ * This component fetches and displays an NFT's description. It takes in a `className` and `style` props
+ * so you can style it just like how you would style a <div> element.
+ * @returns A <div> element
+ *
+ * Since this component has an internal loading state (for when the NFT media is being fetched),
+ * you must wrapped it with React.Suspense to make it work.
+ *
+ * @component
+ * @example
+ * ### Basic usage
+ * ```tsx
+ * import { getContract } from "thirdweb";
+ * import { NFT } from "thirdweb/react";
+ *
+ * const nftContract = getContract({
+ *   address: "0x...",
+ *   chain: ethereum,
+ *   client: yourThirdwebClient,
+ * });
+ *
+ * <NFT contract={nftContract} tokenId={0n}>
+ *   This will show the description for tokenId #0 from the `nftContract` collection
+ *   <Suspense fallback={"Loading media..."}>
+ *     <NFT.Description className="mx-auto" style={{ color: "red" }} />
+ *   </Suspense>
+ * </NFT>
+ * ```
+ */
+NFT.Description = (props: {
+  className: string;
+  style: React.CSSProperties;
+}) => {
+  const { contract, tokenId } = useNFTContext();
+  const nftQuery = useSuspenseQuery({
+    queryKey: [
+      "__nft_info_internal__",
+      contract.chain.id,
+      contract.address,
+      tokenId.toString(),
+    ],
+    queryFn: () => getNFTInfo({ contract, tokenId }),
+  });
+  const description = nftQuery.data?.metadata.description || "";
+  return <div {...props}>{description}</div>;
+};
+
+/**
  * @internal
  */
-export async function getNFTMedia(
-  options: NFTProviderProps,
-): Promise<NFTMetadata> {
+export async function getNFTInfo(options: NFTProviderProps): Promise<NFTType> {
   const nft = await Promise.allSettled([
     getNFT721(options),
     getNFT1155(options),
@@ -154,5 +245,5 @@ export async function getNFTMedia(
     }
     throw new Error("Failed to load NFT metadata");
   });
-  return nft.metadata;
+  return nft;
 }

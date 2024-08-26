@@ -2,15 +2,15 @@ import { useContext } from "react";
 import { describe, expect, it } from "vitest";
 import { render, screen, waitFor } from "~test/react-render.js";
 import { DOODLES_CONTRACT } from "~test/test-contracts.js";
-import { NFT, NFTProviderContext, getNFTMedia } from "./NFT.js";
+import { NFT, NFTProviderContext, getNFTInfo } from "./NFT.js";
 
 describe.runIf(process.env.TW_SECRET_KEY)("NFT prebuilt component", () => {
   it("should fetch the NFT metadata", async () => {
-    const metadata = await getNFTMedia({
+    const nft = await getNFTInfo({
       contract: DOODLES_CONTRACT,
       tokenId: 1n,
     });
-    expect(metadata).toStrictEqual({
+    expect(nft.metadata).toStrictEqual({
       attributes: [
         {
           trait_type: "face",
@@ -81,5 +81,31 @@ describe.runIf(process.env.TW_SECRET_KEY)("NFT prebuilt component", () => {
     );
 
     waitFor(() => expect(screen.getByRole("img")).toBeInTheDocument());
+  });
+
+  it("should render the NFT name", () => {
+    render(
+      <NFT contract={DOODLES_CONTRACT} tokenId={1n}>
+        <NFT.Name />
+      </NFT>,
+    );
+
+    waitFor(() => expect(screen.getByText("Doodle #1")).toBeInTheDocument());
+  });
+
+  it("should render the NFT description", () => {
+    render(
+      <NFT contract={DOODLES_CONTRACT} tokenId={1n}>
+        <NFT.Name />
+      </NFT>,
+    );
+
+    waitFor(() =>
+      expect(
+        screen.getByText(
+          "A community-driven collectibles project featuring art by Burnt Toast",
+        ),
+      ).toBeInTheDocument(),
+    );
   });
 });
