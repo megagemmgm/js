@@ -1,5 +1,11 @@
 # thirdweb
 
+## 5.48.3
+
+### Patch Changes
+
+- [#4106](https://github.com/thirdweb-dev/js/pull/4106) [`c116597`](https://github.com/thirdweb-dev/js/commit/c1165976410b03754ef65a8f707a4c7fccd3d3a1) Thanks [@joaquim-verges](https://github.com/joaquim-verges)! - Support Entrypoint v0.7 for smart accounts
+
 ## 5.48.2
 
 ### Patch Changes
