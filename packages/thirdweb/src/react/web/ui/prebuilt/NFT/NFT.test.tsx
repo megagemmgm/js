@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { DOODLES_CONTRACT } from "~test/test-contracts.js";
-import { getNFTMedia } from "./NFT.js";
+import { getNFTMedia, NFT, NFTProviderContext } from "./NFT.js";
+import { render, screen, waitFor } from "~test/react-render.js";
+import { useContext } from "react";
 
 describe.runIf(process.env.TW_SECRET_KEY)("NFT prebuilt component", () => {
   it("should fetch the NFT metadata", async () => {
@@ -36,5 +38,48 @@ describe.runIf(process.env.TW_SECRET_KEY)("NFT prebuilt component", () => {
       image: "ipfs://QmTDxnzcvj2p3xBrKcGv1wxoyhAn2yzCQnZZ9LmFjReuH9",
       name: "Doodle #1",
     });
+  });
+
+  it("should render children correctly", () => {
+    render(
+      <NFT contract={DOODLES_CONTRACT} tokenId={0n}>
+        <div>Child Component</div>
+      </NFT>,
+    );
+
+    expect(screen.getByText("Child Component")).toBeInTheDocument();
+  });
+
+  it("should provide context values to children", () => {
+    function NFTConsumer() {
+      const context = useContext(NFTProviderContext);
+      if (!context) {
+        return <div>No context</div>;
+      }
+      return (
+        <div>
+          Contract: {String(context.contract)}, Token ID:{" "}
+          {context.tokenId.toString()}
+        </div>
+      );
+    }
+    render(
+      <NFT contract={DOODLES_CONTRACT} tokenId={0n}>
+        <NFTConsumer />
+      </NFT>,
+    );
+
+    expect(screen.getByText(/Contract:/)).toBeInTheDocument();
+    expect(screen.getByText(/Token ID: 0/)).toBeInTheDocument();
+  });
+
+  it("should render the NFT image", () => {
+    render(
+      <NFT contract={DOODLES_CONTRACT} tokenId={0n}>
+        <NFT.Media />
+      </NFT>,
+    );
+
+    waitFor(() => expect(screen.getByRole("img")).toBeInTheDocument());
   });
 });

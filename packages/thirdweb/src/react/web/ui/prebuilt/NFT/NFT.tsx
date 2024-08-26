@@ -14,7 +14,10 @@ export type NFTProviderProps = {
   tokenId: bigint;
 };
 
-const NFTProviderContext = /* @__PURE__ */ createContext<
+/**
+ * @internal
+ */
+export const NFTProviderContext = /* @__PURE__ */ createContext<
   NFTProviderProps | undefined
 >(undefined);
 
