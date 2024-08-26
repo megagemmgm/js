@@ -150,7 +150,7 @@ export function TeamHeaderMobileUI(props: TeamHeaderCompProps) {
             <div className="flex items-center gap-1">
               <Link
                 href={`/team/${props.currentTeam.slug}/${props.currentProject.slug}`}
-                className="font-semibold text-sm flex flex-row gap-1 items-center"
+                className="font-semibold text-sm truncate max-lg:max-w-[130px]"
               >
                 {props.currentProject.name}
               </Link>
