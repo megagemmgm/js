@@ -39,8 +39,8 @@ export type VoteContractParams = {
    * The fraction of the total voting power that is required for a proposal to pass.
    * A value of 0 indicates that no voting power is sufficient,
    * whereas a value of 100 indicates that the entirety of voting power must vote for a proposal to pass.
-   * It can have at most two digits after the decimal point. For example:
-   * - 51.22 or "51.22" is a valid input
+   * `initialProposalThreshold` should be an integer or an integer-convertoble string. For example:
+   * - 51 or "51" is a valid input
    * - 51.225 or "51.225" is an invalid input
    */
   minVoteQuorumRequiredPercent: number | string;
@@ -191,15 +191,12 @@ async function getInitializeTransaction(options: {
 
   // Make sure if user is passing a float, it should only have 2 digit after the decimal point
   if (!Number.isInteger(_num)) {
-    const _str = String(minVoteQuorumRequiredPercent).split(".")[1];
-    if (_str && _str.length > 2) {
-      throw new Error(
-        `${_num} is an invalid value. Only allowed 2 digits after the decimal point.`,
-      );
-    }
+    throw new Error(
+      `${_num} is an invalid value. Only integer-like values accepted`,
+    );
   }
 
-  const initialVoteQuorumFraction = BigInt(_num * 100); // 51.22 -> 5122n
+  const initialVoteQuorumFraction = BigInt(_num);
 
   return initialize({
     contract: implementationContract,
