@@ -1,8 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { ThirdwebClient } from "thirdweb";
-import type { WalletId } from "thirdweb/wallets";
 
 import {
   DropdownMenu,
@@ -16,9 +14,6 @@ import Link from "next/link";
 import { cn } from "../../../../@/lib/utils";
 
 export function AccountButton(props: {
-  client: ThirdwebClient;
-  address: string | undefined;
-  walletId: WalletId | undefined;
   email: string | undefined;
   logout: () => void;
   connectButton: React.ReactNode;
@@ -34,13 +29,17 @@ export function AccountButton(props: {
           variant="ghost"
         >
           {/* TODO - replace with account image */}
-          <div className="size-10 rounded-full bg-link-foreground" />
+          <div className="size-9 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="p-0 w-[300px] rounded-xl" align="end">
+      <DropdownMenuContent
+        className="p-0 w-[300px] rounded-lg"
+        align="end"
+        sideOffset={16}
+      >
         <div className="p-4 pb-5 border-b">
           <p className="text-sm text-muted-foreground">{props.email}</p>
-          <div className="h-2" />
+          <div className="h-3" />
           <div className="[&>button]:!w-full">{props.connectButton}</div>
         </div>
 
@@ -60,6 +59,7 @@ export function AccountButton(props: {
                 size="icon"
                 onClick={() => setTheme("light")}
                 variant="ghost"
+                aria-label="Light theme"
                 className={cn(
                   "!p-1 !h-auto !w-auto",
                   theme === "light" ? "opacity-100" : "opacity-30",
@@ -71,6 +71,7 @@ export function AccountButton(props: {
                 size="icon"
                 onClick={() => setTheme("dark")}
                 variant="ghost"
+                aria-label="Dark theme"
                 className={cn(
                   "!p-1 !h-auto !w-auto",
                   theme === "dark" ? "opacity-100" : "opacity-30",

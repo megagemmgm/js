@@ -12,7 +12,11 @@ import {
 const meta = {
   title: "Shadcn/Header",
   component: Story,
-  parameters: {},
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
+  },
 } satisfies Meta<typeof Story>;
 
 export default meta;
@@ -105,8 +109,6 @@ function Variants(props: {
         <Comp
           teamsAndProjects={teamsAndProjects}
           currentTeam={teamsAndProjects[0].team}
-          address={"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"} // vitalik.eth
-          walletId="io.metamask"
           currentProject={undefined}
           email="eng@thirdweb.com"
           logout={() => {}}
@@ -120,8 +122,6 @@ function Variants(props: {
         <Comp
           teamsAndProjects={teamsAndProjects}
           currentTeam={teamsAndProjects[1].team}
-          address={undefined}
-          walletId={undefined}
           currentProject={undefined}
           email={undefined}
           logout={() => {}}
@@ -134,8 +134,6 @@ function Variants(props: {
         <Comp
           teamsAndProjects={teamsAndProjects}
           currentTeam={teamsAndProjects[2].team}
-          address={undefined}
-          walletId={undefined}
           currentProject={undefined}
           email="eng@thirdweb.com"
           logout={() => {}}
@@ -148,8 +146,6 @@ function Variants(props: {
         <Comp
           teamsAndProjects={teamsAndProjects}
           currentTeam={teamsAndProjects[2].team}
-          address={undefined}
-          walletId={undefined}
           currentProject={teamsAndProjects[2].projects[0]}
           email="eng@thirdweb.com"
           logout={() => {}}

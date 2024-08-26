@@ -1,12 +1,11 @@
 import type { Project } from "@/api/projects";
 import type { Team } from "@/api/team";
 import { Badge } from "@/components/ui/badge";
-import { thirdwebClient } from "@/constants/client";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import type { WalletId } from "thirdweb/wallets";
 import { AccountButton } from "../../../team/[team_slug]/components/account-button.client";
 import { ThirdwebMiniLogo } from "../../ThirdwebMiniLogo";
+import { MobileBurgerMenuButton } from "./MobileBurgerMenuButton";
 import { ProjectSelectorMobileMenuButton } from "./ProjectSelectorMobileMenuButton";
 import { ResourcesDropdownButton } from "./ResourcesDropdownButton";
 import { TeamAndProjectSelectorPopoverButton } from "./TeamAndProjectSelectorPopoverButton";
@@ -16,8 +15,6 @@ import { getValidTeamPlan } from "./getValidTeamPlan";
 export type TeamHeaderCompProps = {
   currentTeam: Team;
   teamsAndProjects: Array<{ team: Team; projects: Project[] }>;
-  address: string | undefined;
-  walletId: WalletId | undefined;
   currentProject: Project | undefined;
   className?: string;
   email: string | undefined;
@@ -112,9 +109,6 @@ export function TeamHeaderDesktopUI(props: TeamHeaderCompProps) {
         </Link>
 
         <AccountButton
-          client={thirdwebClient}
-          address={props.address}
-          walletId={props.walletId}
           email={props.email}
           logout={props.logout}
           connectButton={props.connectButton}
@@ -186,10 +180,7 @@ export function TeamHeaderMobileUI(props: TeamHeaderCompProps) {
         )}
       </div>
 
-      <AccountButton
-        client={thirdwebClient}
-        address={props.address}
-        walletId={props.walletId}
+      <MobileBurgerMenuButton
         email={props.email}
         logout={props.logout}
         connectButton={props.connectButton}

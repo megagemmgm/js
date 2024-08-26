@@ -24,6 +24,9 @@ export function TabLinks(props: {
 
   return (
     <div className={cn("relative", props.className)}>
+      {/* Bottom line */}
+      <div className="h-[1px] bg-border absolute bottom-0 left-0 right-0" />
+
       <ScrollShadow scrollableClassName="pb-[8px] relative">
         <div
           className={cn("flex", props.tabContainerClassName)}
@@ -60,11 +63,9 @@ export function TabLinks(props: {
         {/* Active line */}
         <div
           ref={lineRef}
-          className="absolute left-0 bottom-0 h-[2px] bg-foreground rounded-lg fade-in-0 animate-in z-[1]"
+          className="absolute left-0 bottom-0 h-[2px] bg-foreground rounded-lg fade-in-0 animate-in"
         />
       </ScrollShadow>
-      {/* Bottom line */}
-      <div className="h-[1px] bg-border -translate-y-[2px]" />
     </div>
   );
 }
@@ -87,6 +88,9 @@ export function TabButtons(props: {
 
   return (
     <div className={cn("relative", props.containerClassName)}>
+      {/* Bottom line */}
+      <div className="h-[1px] bg-border absolute bottom-0 left-0 right-0" />
+
       <ScrollShadow scrollableClassName="pb-[8px] relative">
         <div
           className={cn("flex", props.tabContainerClassName)}
@@ -121,8 +125,6 @@ export function TabButtons(props: {
           className="absolute left-0 bottom-0 h-[2px] bg-foreground rounded-lg fade-in-0 animate-in"
         />
       </ScrollShadow>
-      {/* Bottom line */}
-      <div className="h-[1px] bg-border -translate-y-[2px]" />
     </div>
   );
 }

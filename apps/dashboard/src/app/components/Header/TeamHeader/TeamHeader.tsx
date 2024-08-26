@@ -2,9 +2,7 @@
 
 import type { Project } from "@/api/projects";
 import type { Team } from "@/api/team";
-import { useLoggedInUser } from "@3rdweb-sdk/react/hooks/useLoggedInUser";
 import { useCallback } from "react";
-import { useActiveWallet } from "thirdweb/react";
 import { useDashboardRouter } from "../../../../@/lib/DashboardRouter";
 import { CustomConnectWallet } from "../../../../@3rdweb-sdk/react/components/connect-wallet";
 import { useAccount } from "../../../../@3rdweb-sdk/react/hooks/useApi";
@@ -19,8 +17,6 @@ export function TeamHeader(props: {
   teamsAndProjects: Array<{ team: Team; projects: Project[] }>;
   currentProject: Project | undefined;
 }) {
-  const { user } = useLoggedInUser();
-  const activeWallet = useActiveWallet();
   const myAccountQuery = useAccount();
   const router = useDashboardRouter();
 
@@ -37,11 +33,9 @@ export function TeamHeader(props: {
   }, [router]);
 
   const headerProps: TeamHeaderCompProps = {
-    address: user?.address,
     currentProject: props.currentProject,
     currentTeam: props.currentTeam,
     teamsAndProjects: props.teamsAndProjects,
-    walletId: activeWallet?.id,
     email: myAccountQuery.data?.email,
     logout: logout,
     connectButton: <CustomConnectWallet />,

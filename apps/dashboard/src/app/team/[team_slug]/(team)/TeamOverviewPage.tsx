@@ -31,7 +31,7 @@ export function TeamOverviewPage(props: {
       <div className="h-12" />
 
       {/* Filters + Add New */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
         <SearchInput value={searchTerm} onValueChange={setSearchTerm} />
         <Button variant="primary" className="gap-2">
           Add New
@@ -47,7 +47,7 @@ export function TeamOverviewPage(props: {
           No projects found
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 ">
           {filteredProjects.map((project) => {
             return (
               <ProjectCard

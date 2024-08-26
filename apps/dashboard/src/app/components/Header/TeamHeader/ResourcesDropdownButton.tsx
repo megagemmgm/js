@@ -29,26 +29,35 @@ export function ResourcesDropdownButton() {
             <ChevronDownIcon className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="p-4 min-w-[250px]" sideOffset={14}>
-          <div className="flex flex-col gap-5">
+        <DropdownMenuContent className="p-4 min-w-[230px]" sideOffset={14}>
+          <div className="flex flex-col gap-4">
             <Link
               href="/chainlist"
-              className="text-muted-foreground hover:text-foreground text-sm"
+              className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-2"
             >
               Chainlist
             </Link>
+
             <Link
               href="https://playground.thirdweb.com/"
               target="_blank"
-              className="text-muted-foreground hover:text-foreground text-sm"
+              className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-2"
             >
               Playground
             </Link>
+
             <Link
               href="/explore"
               className="text-muted-foreground hover:text-foreground text-sm"
             >
               Explore Contracts
+            </Link>
+
+            <Link
+              href="/trending"
+              className="text-muted-foreground hover:text-foreground text-sm"
+            >
+              Popular Contracts
             </Link>
 
             <Button
@@ -57,7 +66,7 @@ export function ResourcesDropdownButton() {
               onClick={() => setIsCMDSearchModalOpen(true)}
             >
               Search Contracts
-              <span className="items-center flex gap-0.5">
+              <span className="items-center flex gap-0.5 text-xs opacity-80">
                 <CommandIcon className="size-3" />K
               </span>
             </Button>
