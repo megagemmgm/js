@@ -3,7 +3,11 @@
 import type { Project } from "@/api/projects";
 import type { Team } from "@/api/team";
 import { useLoggedInUser } from "@3rdweb-sdk/react/hooks/useLoggedInUser";
+import { useCallback } from "react";
 import { useActiveWallet } from "thirdweb/react";
+import { useDashboardRouter } from "../../../../@/lib/DashboardRouter";
+import { CustomConnectWallet } from "../../../../@3rdweb-sdk/react/components/connect-wallet";
+import { useAccount } from "../../../../@3rdweb-sdk/react/hooks/useApi";
 import {
   type TeamHeaderCompProps,
   TeamHeaderDesktopUI,
@@ -17,6 +21,20 @@ export function TeamHeader(props: {
 }) {
   const { user } = useLoggedInUser();
   const activeWallet = useActiveWallet();
+  const myAccountQuery = useAccount();
+  const router = useDashboardRouter();
+
+  const logout = useCallback(async () => {
+    // log out the user
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+      router.push("/login");
+    } catch (e) {
+      console.error("Failed to log out", e);
+    }
+  }, [router]);
 
   const headerProps: TeamHeaderCompProps = {
     address: user?.address,
@@ -24,6 +42,9 @@ export function TeamHeader(props: {
     currentTeam: props.currentTeam,
     teamsAndProjects: props.teamsAndProjects,
     walletId: activeWallet?.id,
+    email: myAccountQuery.data?.email,
+    logout: logout,
+    connectButton: <CustomConnectWallet />,
   };
 
   return (

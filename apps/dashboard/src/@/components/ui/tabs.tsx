@@ -60,7 +60,7 @@ export function TabLinks(props: {
         {/* Active line */}
         <div
           ref={lineRef}
-          className="absolute left-0 bottom-0 h-[2px] bg-foreground rounded-lg fade-in-0 animate-in"
+          className="absolute left-0 bottom-0 h-[2px] bg-foreground rounded-lg fade-in-0 animate-in z-[1]"
         />
       </ScrollShadow>
       {/* Bottom line */}
@@ -87,7 +87,7 @@ export function TabButtons(props: {
 
   return (
     <div className={cn("relative", props.containerClassName)}>
-      <ScrollShadow scrollableClassName="pb-1 relative">
+      <ScrollShadow scrollableClassName="pb-[8px] relative">
         <div
           className={cn("flex", props.tabContainerClassName)}
           ref={containerRef}

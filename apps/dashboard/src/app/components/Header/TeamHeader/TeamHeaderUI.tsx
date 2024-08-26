@@ -1,6 +1,5 @@
 import type { Project } from "@/api/projects";
 import type { Team } from "@/api/team";
-import { ColorModeToggle } from "@/components/color-mode-toggle";
 import { Badge } from "@/components/ui/badge";
 import { thirdwebClient } from "@/constants/client";
 import { cn } from "@/lib/utils";
@@ -20,6 +19,9 @@ export type TeamHeaderCompProps = {
   walletId: WalletId | undefined;
   currentProject: Project | undefined;
   className?: string;
+  email: string | undefined;
+  logout: () => void;
+  connectButton: React.ReactNode;
 };
 
 export function TeamHeaderDesktopUI(props: TeamHeaderCompProps) {
@@ -91,14 +93,14 @@ export function TeamHeaderDesktopUI(props: TeamHeaderCompProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <ColorModeToggle />
-        <AccountButton
-          client={thirdwebClient}
-          address={props.address}
-          walletId={props.walletId}
-        />
-      </div>
+      <AccountButton
+        client={thirdwebClient}
+        address={props.address}
+        walletId={props.walletId}
+        email={props.email}
+        logout={props.logout}
+        connectButton={props.connectButton}
+      />
     </header>
   );
 }
@@ -165,14 +167,14 @@ export function TeamHeaderMobileUI(props: TeamHeaderCompProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <ColorModeToggle />
-        <AccountButton
-          client={thirdwebClient}
-          address={props.address}
-          walletId={props.walletId}
-        />
-      </div>
+      <AccountButton
+        client={thirdwebClient}
+        address={props.address}
+        walletId={props.walletId}
+        email={props.email}
+        logout={props.logout}
+        connectButton={props.connectButton}
+      />
     </header>
   );
 }

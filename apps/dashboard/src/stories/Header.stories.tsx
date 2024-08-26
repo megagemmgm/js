@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useLayoutEffect } from "react";
-import { ThirdwebProvider } from "thirdweb/react";
+import { ConnectButton, ThirdwebProvider } from "thirdweb/react";
 import type { Project } from "../@/api/projects";
 import type { Team } from "../@/api/team";
+import { thirdwebClient } from "../@/constants/client";
 import {
   TeamHeaderDesktopUI,
   TeamHeaderMobileUI,
@@ -107,10 +108,13 @@ function Variants(props: {
           address={"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"} // vitalik.eth
           walletId="io.metamask"
           currentProject={undefined}
+          email="eng@thirdweb.com"
+          logout={() => {}}
+          connectButton={<ConnectButton client={thirdwebClient} />}
         />
 
         <span className="text-white font-bold">
-          Not yet Connected, No Current Project, Growth
+          Not yet Connected, No email, No Current Project, Growth
         </span>
 
         <Comp
@@ -119,6 +123,9 @@ function Variants(props: {
           address={undefined}
           walletId={undefined}
           currentProject={undefined}
+          email={undefined}
+          logout={() => {}}
+          connectButton={<ConnectButton client={thirdwebClient} />}
         />
 
         <span className="text-white font-bold">
@@ -130,6 +137,9 @@ function Variants(props: {
           address={undefined}
           walletId={undefined}
           currentProject={undefined}
+          email="eng@thirdweb.com"
+          logout={() => {}}
+          connectButton={<ConnectButton client={thirdwebClient} />}
         />
 
         <span className="text-white font-bold">
@@ -141,6 +151,9 @@ function Variants(props: {
           address={undefined}
           walletId={undefined}
           currentProject={teamsAndProjects[2].projects[0]}
+          email="eng@thirdweb.com"
+          logout={() => {}}
+          connectButton={<ConnectButton client={thirdwebClient} />}
         />
       </div>
     </ThirdwebProvider>
