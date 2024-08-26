@@ -9,8 +9,18 @@ import type { NFT as NFTType } from "../../../../../utils/nft/parseNft.js";
 import { MediaRenderer } from "../../MediaRenderer/MediaRenderer.js";
 import type { MediaRendererProps } from "../../MediaRenderer/types.js";
 
+/**
+ * Props for the <NFT> component
+ * @component
+ */
 export type NFTProviderProps = {
+  /**
+   * The NFT contract address. Accepts both ERC721 and ERC1155 contracts
+   */
   contract: ThirdwebContract;
+  /**
+   * The tokenId whose info you want to display
+   */
   tokenId: bigint;
 };
 
@@ -71,13 +81,20 @@ function useNFTContext() {
   return ctx;
 }
 
+/**
+ * @component
+ * The props for the <NFT.Media /> component
+ * It is similar to the [`MediaRendererProps`](https://portal.thirdweb.com/references/typescript/v5/MediaRendererProps) 
+ * (excluding `src`, `poster` and `client`) that you can
+ * use to style the NFT.Media
+ */
 export type NFTMediaProps = Omit<
   MediaRendererProps,
   "src" | "poster" | "client"
 >;
 
 /**
- * This component fetches and displays an NFT's media. It uses thirdweb MediaRenderer under the hood
+ * This component fetches and displays an NFT's media. It uses thirdweb [`MediaRenderer`](https://portal.thirdweb.com/react/v5/components/MediaRenderer) under the hood
  * so you can style it just like how you would style a MediaRenderer.
  * @returns A MediaRenderer component
  *
