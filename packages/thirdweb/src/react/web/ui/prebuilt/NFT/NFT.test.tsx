@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { DOODLES_CONTRACT } from "~test/test-contracts.js";
-import { getNFTMedia, NFT, NFTProviderContext } from "./NFT.js";
-import { render, screen, waitFor } from "~test/react-render.js";
 import { useContext } from "react";
+import { describe, expect, it } from "vitest";
+import { render, screen, waitFor } from "~test/react-render.js";
+import { DOODLES_CONTRACT } from "~test/test-contracts.js";
+import { NFT, NFTProviderContext, getNFTMedia } from "./NFT.js";
 
 describe.runIf(process.env.TW_SECRET_KEY)("NFT prebuilt component", () => {
   it("should fetch the NFT metadata", async () => {
